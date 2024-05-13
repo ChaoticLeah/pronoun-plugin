@@ -1,0 +1,149 @@
+/// @ 0.12.4
+### {
+  name: "Pronouns in name V2.1.3"
+  version: "1.0.0-aiscript0.12.4"
+  author: "@ChaosKitsune@woem.men"
+  description: "This will try to put the users pronouns in their name on any given post"
+  permissions: null
+  config: {
+		experimentalDescMethod: {
+			type: 'boolean'
+			label: 'Use experimental algorithm'
+			description: 'This could put some random stuff in their name, but also will allow for more acurate pronouns'
+			default: false
+		},
+        debugExperimentalDescMethod: {
+			type: 'boolean'
+			label: 'Debug experimental algorithm'
+			description: 'Prints the data related to the setting above'
+			default: false
+		},
+        checkFields: {
+			type: 'boolean'
+			label: 'Check Fields'
+			description: 'If its crashing try disabling this'
+			default: true
+		},
+        debug: {
+			type: 'boolean'
+			label: 'Debug'
+			description: 'If it fails to find find pronouns it will put (unknown) at the end of the name'
+			default: false
+		}
+    }
+}
+
+@is_pronoun(pronoun, lowerDesc){
+    return lowerDesc.index_of([pronoun, "/"].join()) != -1 || lowerDesc.index_of(["/", pronoun].join()) != -1
+}
+
+@contains_any_pronouns(pronouns, lowerDesc){
+    let words_in_desc = lowerDesc.split(" ")
+    for let i, words_in_desc.len {
+        let found_pronoun = is_pronoun(pronouns[i], lowerDesc)
+        if found_pronoun {
+            return true
+        }
+    }
+    return false
+}
+
+//Make sure that a "word" isnt like 10/10 rather than she/her
+@is_word_fraction(word){
+    return contains_any_pronouns(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], word)
+}
+
+//The new function to replace check_desc
+@find_pronouns_in_desc(desc){
+    let words_in_desc = desc.split(" ")
+    if Plugin:config.debugExperimentalDescMethod {
+        print(words_in_desc)
+    }
+
+    for let i, words_in_desc.len {
+        let word = words_in_desc[i]
+        //Make sure there is a / and its not w/ (Cuz thats short for with)
+        let is_potential_pronoun = word.index_of("/") != -1 && word.index_of("w/") == -1 && word.index_of("http") == -1 //&& word.index_of("(") != -1 && word.index_of(")") != -1
+        if is_potential_pronoun {
+            let is_fraction = is_word_fraction(word)
+            if !is_fraction {
+                return word
+            }
+            // let check = contains_any_pronouns(["she", "her", "he", "him", "they", "them", "it", "its", "xe"], desc)
+        }
+    }
+    return ""
+}
+
+@check_desc(desc){
+    let lowerDesc = desc.lower()
+    if is_pronoun("she", lowerDesc) || is_pronoun("her", lowerDesc) {
+        return "She/Her"
+    }
+    if is_pronoun("he", lowerDesc) || is_pronoun("him", lowerDesc) {
+        return "He/Him"
+    }
+    if is_pronoun("they", lowerDesc) || is_pronoun("them", lowerDesc) {
+        return "They/Them"
+    }
+    if is_pronoun("it", lowerDesc) || is_pronoun("its", lowerDesc) {
+        return "It/Its"
+    }
+    return ""
+}
+
+Plugin:register_note_view_interruptor(@(note) {
+    var fields = []
+    
+    if Plugin:config.checkFields {
+        //fields = Mk:api("users/search-by-username-and-host" {username: note.user.username, instance: note.user.avatarUrl.split("/")[2], limit: 1})[0].fields 
+        fields = Mk:api("users/show", {username: note.user.username, host: note.user.host}).fields 
+    }
+
+    let data = {
+        pronouns: ""
+    }
+
+
+
+    var descPronoun = ""
+    
+    if Plugin:config.experimentalDescMethod {
+        descPronoun = find_pronouns_in_desc(note.user.description)
+    } else {
+        descPronoun = check_desc(note.user.description)
+    }
+
+    data.pronouns = descPronoun
+
+    if fields.len > 0 {
+        for let i, fields.len {
+            if fields[i].name.lower() == "pronouns" || fields[i].name.lower() == "pronoun" {
+                // Overwite the pronouns found in the desc, and prefer ones set in the fields
+                data.pronouns = fields[i].value
+            //If using the experimental method also apply it to the fields incase they didnt name it pronoun(s)
+            } else if Plugin:config.experimentalDescMethod && data.pronouns.len == 0 {
+                data.pronouns = find_pronouns_in_desc(fields[i].value)
+            }
+        }
+    }
+    if Plugin:config.debug {
+        if data.pronouns.len == 0 {
+            data.pronouns = "Unknown"
+        }
+    }
+    //If there are no pronouns then just return it as-is
+    if data.pronouns.len == 0 {
+        return note
+    }
+    
+		var name = note.user.name
+		if name == null {
+			name = note.user.username
+		}
+		let ltr_char = "‭"
+    note.user.name = [name, ltr_char,  " (", data.pronouns, ")"].join("")
+    return note
+})
+
+print("Pronouns In Name Successfully Installed")
