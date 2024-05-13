@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V2.2.3"
-  version: "2.2.3"
+  name: "Pronouns in name V3.2.3"
+  version: "3.2.3"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -255,9 +255,16 @@ Plugin:register_note_view_interruptor(@(note) {
         } else {
             descPronoun = check_desc(description)
         }
-        
-        note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", descPronoun, ")</small>"].join(""))
 
+        if Plugin:config.debug {
+            if descPronoun.len == 0 {
+                descPronoun = "Unknown"
+            }
+        }
+        
+        if descPronoun.len != 0 {
+            note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", descPronoun, ")</small>"].join(""))
+        }
     }
 
     return note
