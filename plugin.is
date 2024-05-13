@@ -24,12 +24,6 @@
 			description: 'If its crashing try disabling this'
 			default: true
 		},
-        fieldsOverrideDesc: {
-			type: 'boolean'
-			label: 'Field Pronouns overide Desc Pronouns'
-			description: 'Pronouns found in fields will override pronouns found in the description. (This can break pronouns for plural people)'
-			default: false
-		},
         notifyForUpdates: {
 			type: 'boolean'
 			label: 'Notify you when there is an update'
@@ -123,11 +117,13 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     for let i, words_in_desc.len {
         let word = trim_mfm(words_in_desc[i])
         //Make sure there is a / and its not w/ (Cuz thats short for with)
-        let is_potential_pronoun = word.index_of("/") != -1 && word.index_of("w/") == -1 && word.index_of("http") == -1 //&& word.index_of("(") != -1 && word.index_of(")") != -1
+        let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("http"))
+
         if is_potential_pronoun {
             let is_fraction = is_word_fraction(word)
             let is_word_mfm = is_word_mfm(word)
-            if !is_fraction && !is_word_mfm {
+
+            if (!is_fraction) && (!is_word_mfm) {
                 return word
             }
         }
@@ -213,10 +209,10 @@ Plugin:register_note_view_interruptor(@(note) {
     }
 
     data.pronouns = descPronoun
-
-    if fields.len > 0 && ((Plugin:config.fieldsOverrideDesc) || descPronoun.len == 0) {
+    // If there are headmates then dont use the fields since right now we dont support them (unless no pronouns are found already in the desc)
+    if fields.len > 0 && ((!hasHeadmate) || descPronoun.len == 0 || descPronoun.len > 15) {
         for let i, fields.len {
-            if fields[i].name.lower() == "pronouns" || fields[i].name.lower() == "pronoun" {
+            if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("http") {
                 // Overwite the pronouns found in the desc, and prefer ones set in the fields
                 data.pronouns = fields[i].value
             //If using the experimental method also apply it to the fields incase they didnt name it pronoun(s)
@@ -225,11 +221,13 @@ Plugin:register_note_view_interruptor(@(note) {
             }
         }
     }
+
     if Plugin:config.debug {
         if data.pronouns.len == 0 {
             data.pronouns = "Unknown"
         }
     }
+
     //If there are no pronouns then just return it as-is
     if data.pronouns.len == 0 {
         return note
