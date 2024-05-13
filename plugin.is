@@ -69,7 +69,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
         let text = post.object.text
         if Json:parsable(text) {
             if Json:parse(post.object.text).pronounPluginVersion > version && Mk:load("updateRequested") != true {
-                send_notification("Please install the latest version of the plugin here https://woem.men/@ChaosKitsune/pages/1704460749056", "Pronoun Plugin Update")
+                send_notification("Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin", "Pronoun Plugin Update")
                 Mk:save("updateRequested", true)
             }
         }
