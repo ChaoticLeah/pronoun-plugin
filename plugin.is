@@ -107,30 +107,47 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     return trimmed[trimmed.len - 1]
 }
 
+@split_by_space_and_nl(desc) {
+    var arr = desc.split(" ")
+    var new_arr = []
+    for let i, arr.len {
+        let split_by_nl = arr[i].split(Str:lf)
+        for let j, split_by_nl.len {
+            new_arr.push(split_by_nl[j])
+        }
+    }
+
+    return new_arr
+}
+
 //The new function to replace check_desc
 @find_pronouns_in_desc(desc){
-    let words_in_desc = desc.split(" ")
+    let words_in_desc = split_by_space_and_nl(desc)
+    //desc.split(" ")
     if Plugin:config.debugExperimentalDescMethod {
         print(words_in_desc)
     }
 
     for let i, words_in_desc.len {
-        let split_by_nl = words_in_desc[i].split(Str:lf)
-        for let j, split_by_nl.len {
 
-            let word = trim_mfm(split_by_nl[j])
-            //Make sure there is a / and its not w/ (Cuz thats short for with)
-            let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http"))
+        let word = trim_mfm(words_in_desc[i])
+        //Make sure there is a / and its not w/ (Cuz thats short for with)
+        let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http"))
 
-            if is_potential_pronoun {
-                let is_fraction = is_word_fraction(word)
-                let is_word_mfm = is_word_mfm(word)
+        if is_potential_pronoun {
+            let is_fraction = is_word_fraction(word)
+            let is_word_mfm = is_word_mfm(word)
 
-                if (!is_fraction) && (!is_word_mfm) {
-                    return word
+            if (!is_fraction) && (!is_word_mfm) {
+                // That might mean someone spaced it out like she / her vs she/her
+                if (word.len == 1 && i != 0 && i != words_in_desc.len) {
+                    return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("")
                 }
+
+                return word
             }
         }
+        
     }
     return ""
 }
