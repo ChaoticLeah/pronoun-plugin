@@ -115,16 +115,20 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     }
 
     for let i, words_in_desc.len {
-        let word = trim_mfm(words_in_desc[i])
-        //Make sure there is a / and its not w/ (Cuz thats short for with)
-        let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("http"))
+        let split_by_nl = words_in_desc[i].split(Str:lf)
+        for let j, split_by_nl.len {
 
-        if is_potential_pronoun {
-            let is_fraction = is_word_fraction(word)
-            let is_word_mfm = is_word_mfm(word)
+            let word = trim_mfm(split_by_nl[j])
+            //Make sure there is a / and its not w/ (Cuz thats short for with)
+            let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http"))
 
-            if (!is_fraction) && (!is_word_mfm) {
-                return word
+            if is_potential_pronoun {
+                let is_fraction = is_word_fraction(word)
+                let is_word_mfm = is_word_mfm(word)
+
+                if (!is_fraction) && (!is_word_mfm) {
+                    return word
+                }
             }
         }
     }
