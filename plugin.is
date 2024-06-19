@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V3.2.4"
-  version: "3.2.4"
+  name: "Pronouns in name V3.2.5"
+  version: "3.2.5"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -68,9 +68,10 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     if post != null {
         let text = post.object.text
         if Json:parsable(text) {
-            if Json:parse(post.object.text).pronounPluginVersion > version && Mk:load("updateRequested") != true {
+            let latest_version = Json:parse(post.object.text).pronounPluginVersion
+            if latest_version > version && Mk:load("updateRequested") != latest_version {
                 send_notification("Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin", "Pronoun Plugin Update")
-                Mk:save("updateRequested", true)
+                Mk:save("updateRequested", latest_version)
             }
         }
     }
