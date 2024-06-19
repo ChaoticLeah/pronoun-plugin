@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V3.2.3"
-  version: "3.2.3"
+  name: "Pronouns in name V3.2.4"
+  version: "3.2.4"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -39,7 +39,7 @@
     }
 }
 
-let version = 6
+let version = 7
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
@@ -132,8 +132,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
         let word = trim_mfm(words_in_desc[i])
         //Make sure there is a / and its not w/ (Cuz thats short for with)
-        let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http"))
-
+        let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
         if is_potential_pronoun {
             let is_fraction = is_word_fraction(word)
             let is_word_mfm = is_word_mfm(word)
@@ -191,8 +190,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     }
 }
 
-
-Plugin:register_note_view_interruptor(@(note) {
+@check_note(note) {
     var fields = []
     var notePostedBy = ""
     var currentlyFronting = ""
@@ -285,6 +283,24 @@ Plugin:register_note_view_interruptor(@(note) {
             note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", descPronoun, ")</small>"].join(""))
         }
     }
+
+    return note
+
+}
+
+
+Plugin:register_note_view_interruptor(@(note) {
+    note = check_note(note)
+
+    // if note.reply != null {
+    //     note = check_note(note.reply)
+    // }
+
+    // if note.renote != null {
+    //     print(note.renote)
+    //     note = check_note(note.renote)
+    // }
+
 
     return note
 })
