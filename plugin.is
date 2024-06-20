@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V3.2.5"
-  version: "3.2.5"
+  name: "Pronouns in name V3.3.5"
+  version: "3.3.5"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -39,7 +39,7 @@
     }
 }
 
-let version = 7
+let version = 8
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
@@ -175,7 +175,9 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
 @headmate_post_name(post) {
     var noteHeadmateCharStartPos = post.index_of("<small> - posted by ") + ("<small> - posted by ".len)
-    return post.slice(noteHeadmateCharStartPos, post.len - ("</small>".len))
+    var rtn = post.slice(noteHeadmateCharStartPos, post.len - ("</small>".len))
+    //A little fix for a problem that *sometimes* happens
+    return rtn.split("<")[0]
 }
 
 @get_desc_starting_from(desc, name) {
@@ -192,51 +194,98 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 }
 
 @check_note(note) {
+
+    if note.reply != null {
+        note.reply = check_note(note.reply)
+    }
+
     var fields = []
     var notePostedBy = ""
     var currentlyFronting = ""
-    var description = note.user.description
+    var description = if note.user.description != null {
+        note.user.description
+    } else {
+        ""
+    }
+    
+
+    let data = {
+        pronouns: "",
+        pluralPostPronouns: null,
+    }
+
+    let hasHeadmate = if note.text != null {
+        get_has_headmate(note.text)
+    } else {
+        false
+    }
 
     if Plugin:config.checkFields {
         let userData = Mk:api("users/show", {username: note.user.username, host: note.user.host})
         fields = userData.fields
-        // Misskey cant grab the description from the note so if it can it grabs it here
-        if userData.description != null {
+        // Misskey cant grab the description from the note sometimes so if it can it grabs it here
+        if userData.description != null && !hasHeadmate {
             note.user.description = userData.description 
             description = note.user.description
         }
     }
 
-    let hasHeadmate = get_has_headmate(note.text)
-
+    
     if hasHeadmate {
         currentlyFronting = note.user.name.slice(note.user.name.index_of("(") + 1, note.user.name.index_of(")"))
 
         notePostedBy = headmate_post_name(note.text)
-        description = get_desc_starting_from(note.user.description, currentlyFronting)
-    }
+        let current_fronter_desc = get_desc_starting_from(note.user.description, currentlyFronting)
 
-    let data = {
-        pronouns: ""
+        description = current_fronter_desc
+
+        let note_posted_by_desc = get_desc_starting_from(note.user.description, notePostedBy)
+
+        if Plugin:config.experimentalDescMethod {
+            data.pluralPostPronouns = find_pronouns_in_desc(note_posted_by_desc)
+        } else {
+            data.pluralPostPronouns = check_desc(note_posted_by_desc)
+        }
+
+        if Plugin:config.debug {
+            if data.pluralPostPronouns == null {
+                data.pluralPostPronouns = "Unknown"
+            }
+        }
     }
 
     var descPronoun = get_pronouns_from_desc(description)
 
     // If nothing comes up for that headmate then just go with the general search
-    if hasHeadmate && descPronoun.len == 0 {
-        description = note.user.description
-        descPronoun = get_pronouns_from_desc(description)
+    if hasHeadmate {
+        if data.pluralPostPronouns == null {
+            description = note.user.description
+            descPronoun = get_pronouns_from_desc(description)
+        } else {
+            note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", data.pluralPostPronouns, ")</small>"].join(""))
+            print(["<small> - posted by ", notePostedBy, "</small>"].join(""))
+        }
     }
 
     data.pronouns = descPronoun
     // If there are headmates then dont use the fields since right now we dont support them (unless no pronouns are found already in the desc)
     if fields.len > 0 && ((!hasHeadmate) || descPronoun.len == 0 || descPronoun.len > 15) {
         for let i, fields.len {
-            if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("http") {
-                // Overwite the pronouns found in the desc, and prefer ones set in the fields
-                data.pronouns = fields[i].value
+            if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("depends") {
+                if !Plugin:config.experimentalDescMethod {
+                    // Overwite the pronouns found in the desc, and prefer ones set in the fields
+                    if !fields[i].value.incl("http") {
+                        data.pronouns = fields[i].value
+                    }
+                } else {
+                    data.pronouns = find_pronouns_in_desc(fields[i].value)
+                }
+
+                break
+            }
+            
             //If using the experimental method also apply it to the fields incase they didnt name it pronoun(s)
-            } else if Plugin:config.experimentalDescMethod && data.pronouns.len == 0 {
+            if Plugin:config.experimentalDescMethod && data.pronouns.len == 0 {
                 data.pronouns = find_pronouns_in_desc(fields[i].value)
             }
         }
@@ -261,30 +310,6 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
     note.user.name = [name, ltr_char,  " (", data.pronouns, ")"].join("")
 
-
-    //Plural stuff
-
-    if hasHeadmate {
-        // Right now this only seems to work when you are not clicked into a post. *key bug :/
-        description = get_desc_starting_from(note.user.description, notePostedBy)
-
-        if Plugin:config.experimentalDescMethod {
-            descPronoun = find_pronouns_in_desc(description)
-        } else {
-            descPronoun = check_desc(description)
-        }
-
-        if Plugin:config.debug {
-            if descPronoun.len == 0 {
-                descPronoun = "Unknown"
-            }
-        }
-        
-        if descPronoun.len != 0 {
-            note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", descPronoun, ")</small>"].join(""))
-        }
-    }
-
     return note
 
 }
@@ -293,15 +318,9 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 Plugin:register_note_view_interruptor(@(note) {
     note = check_note(note)
 
-    // if note.reply != null {
-    //     note = check_note(note.reply)
-    // }
-
-    // if note.renote != null {
-    //     print(note.renote)
-    //     note = check_note(note.renote)
-    // }
-
+    if note.renote != null {
+        note.renote = check_note(note.renote)
+    }
 
     return note
 })
