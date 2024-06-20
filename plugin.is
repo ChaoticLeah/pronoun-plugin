@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
   name: "Pronouns in name V3.3.5"
-  version: "3.3.5"
+  version: "3.3.6"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -39,7 +39,7 @@
     }
 }
 
-let version = 8
+let version = 9
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
@@ -108,6 +108,11 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     return trimmed[trimmed.len - 1]
 }
 
+@trim_parrens(word){
+    var trimmed = word.split(")")[0].split("(")
+    return trimmed[trimmed.len - 1]
+}
+
 @split_by_space_and_nl(desc) {
     var arr = desc.split(" ")
     var new_arr = []
@@ -131,7 +136,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
     for let i, words_in_desc.len {
 
-        let word = trim_mfm(words_in_desc[i])
+        let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
         //Make sure there is a / and its not w/ (Cuz thats short for with)
         let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
         if is_potential_pronoun {
@@ -141,7 +146,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
             if (!is_fraction) && (!is_word_mfm) {
                 // That might mean someone spaced it out like she / her vs she/her
                 if (word.len == 1 && i != 0 && i != words_in_desc.len) {
-                    return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("")
+                    return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("").replace(",", "")
                 }
 
                 return word
@@ -263,7 +268,6 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
             descPronoun = get_pronouns_from_desc(description)
         } else {
             note.text = note.text.replace(["<small> - posted by ", notePostedBy, "</small>"].join(""), ["<small> - posted by ", notePostedBy, " (", data.pluralPostPronouns, ")</small>"].join(""))
-            print(["<small> - posted by ", notePostedBy, "</small>"].join(""))
         }
     }
 
@@ -278,7 +282,14 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
                         data.pronouns = fields[i].value
                     }
                 } else {
-                    data.pronouns = find_pronouns_in_desc(fields[i].value)
+                    var found_pronouns = find_pronouns_in_desc(fields[i].value)
+
+                    if found_pronouns.len != 0 {
+                        data.pronouns = found_pronouns
+                        if data.pronouns.len == 0 {
+                            data.pronouns = find_pronouns_in_desc(fields[i].name)
+                        }
+                    }
                 }
 
                 break
