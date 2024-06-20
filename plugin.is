@@ -1,6 +1,6 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V3.3.5"
+  name: "Pronouns in name V3.3.6"
   version: "3.3.6"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
