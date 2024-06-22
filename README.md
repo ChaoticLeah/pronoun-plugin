@@ -32,6 +32,30 @@ Here is an example:
 ![image](https://github.com/KevinWh0/pronoun-plugin/assets/45321184/1e664521-21eb-485d-a53c-b354c900f953)
 
 
+## What if I want to mention another headmate in one of my headmates bios?
+
+If you want to mention a headmate in another headmates bio it will confuse the plugin so please escape it properly.
+Lets say this is your bio:
+```
+Emma
+Friends with Brian
+She/Her
+
+Brian
+He/Him
+```
+This will confuse the plugin when grabbing Brian's pronouns since it will think Brian's pronouns are She/Her
+To fix this please escape it like this
+```
+Emma
+Friends with <plain>B</plain>rian
+She/Her
+
+Brian
+He/Him
+```
+Escaping one of the letters like this will make it so the plugin won't see this as that headmate and will now correctly set Brian's pronouns to He/Him. This will also look totally normal to anyone else looking at your bio.
+
 ## Known bugs we cant fix
 
 > The pronouns only sometimes show up
