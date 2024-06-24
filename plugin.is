@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns in name V3.3.7"
-  version: "3.3.7"
+  name: "Pronouns in name V3.3.8"
+  version: "3.3.8"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
@@ -39,7 +39,7 @@
     }
 }
 
-let version = 10
+let version = 11
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
 
@@ -318,7 +318,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     }
     
 	var name = note.user.name
-	if name == null {
+	if name == "" {
 		name = note.user.username
 	}
 	let ltr_char = "‭"
