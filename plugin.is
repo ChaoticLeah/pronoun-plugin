@@ -198,6 +198,14 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     }
 }
 
+@replace_last(str, key, replacer) {
+    let split_by_key = str.split(key)
+    split_by_key.pop()
+    let start_of_word_to_replace = split_by_key.join(key).len
+    let end_of_word_to_replace = start_of_word_to_replace + key.len
+    return [str.slice(0, start_of_word_to_replace), replacer, str.slice(end_of_word_to_replace , str.len) ].join("")
+}
+
 @check_note(note) {
 
     if note.reply != null {
@@ -271,7 +279,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
             description = note.user.description
             descPronoun = get_pronouns_from_desc(description)
         } else {
-            note.text = note.text.replace(notePostedBy, [notePostedBy, " (", data.pluralPostPronouns, ")"].join(""))
+            note.text = replace_last(note.text, notePostedBy, [notePostedBy, " (", data.pluralPostPronouns, ")"].join(""))
         }
     }
 
@@ -287,6 +295,7 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
                     }
                 } else {
                     var found_pronouns = find_pronouns_in_desc(fields[i].value)
+
                     if found_pronouns.len != 0 {
                         data.pronouns = found_pronouns
                         if data.pronouns.len == 0 {
