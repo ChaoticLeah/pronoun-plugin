@@ -1,0 +1,6 @@
+{
+  "file": "plugin.is",
+  "baseUrl": "https://woem.men",
+  "endUrl": "/",
+  "pipeConsole": true
+}

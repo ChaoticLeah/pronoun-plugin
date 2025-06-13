@@ -215,7 +215,18 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
             let headmate_name = headmates[i].split(']')[0].trim()
             let current_fronter_desc = get_desc_starting_from(desc, headmate_name)
             var descPronoun = get_pronouns_from_desc(current_fronter_desc)
-            post = post.replace(["$[scale.hm ", headmate_name, "]"].join(), [headmate_name, "(", descPronoun, ")"].join())
+
+            if descPronoun.len == 0  {
+                if Plugin:config.debug  {
+                    descPronoun = "(Unknown)"
+                } else {
+                    descPronoun = ""
+                }
+            } else {
+                descPronoun = ["(", descPronoun, ")"].join()
+            }
+
+            post = post.replace(["$[scale.hm ", headmate_name, "]"].join(), [headmate_name, descPronoun].join())
         }
 
         return post
@@ -359,7 +370,6 @@ let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
     return note
 
 }
-
 
 Plugin:register_note_view_interruptor(@(note) {
     note = check_note(note)
