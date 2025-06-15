@@ -26,16 +26,63 @@
         return headmates
 	}
 
+    @get_pronouns_from_cache(headmates, username, host, description) {
+        for let i, headmates.len {
+            if !Cache:has([username, "#", headmates[i], "@", host].join()) {
+                return PronounTools:get_headmates_kv(headmates, description)
+            }
+        }
+
+        //Now we know we have all the headmates needed
+        let kv = {}
+        for let i, headmates.len {
+            Obj:set(kv, headmates[i], Cache:get_cache([username, "#", headmates[i], "@", host].join()))
+        }
+        return kv
+        
+    }
 
 }
 
 
 :: PronounTools {
-    @style_pronouns(name, pronouns) {
-        let ltr_char = "‭"
-        return Plugin:config.pronoun_template.replace("%[name]", name).replace("%[pronouns]", [ltr_char, pronouns].join())
+
+    // Some people include pronouns in their username.
+    @already_contains_pronouns(name) {
+        return PronounTools:find_pronouns_in_desc(name) != ""
     }
 
+    //Cuz some people like to use left to right characters in  their name
+    @reverse_replace_if_ltr(str, key, replacer) {
+        let lrt = "‮"
+        if str.index_of(lrt) == -1 {
+            return str.replace(key, replacer)
+        }
+
+        if str.index_of(key) > str.index_of(lrt) {
+            return str.replace(key, reverse_str(replacer))
+        }
+    
+    }
+    
+    @style_pronouns(name, pronouns) {
+        var pnouns = pronouns
+        // let ltr_char = "‭"
+
+        if pnouns == null || pnouns.trim() == "" {
+            if Plugin:config.debug {
+                pnouns = "Unknown"
+            } else {
+                return name
+            }
+        }
+        
+        return PronounTools:reverse_replace_if_ltr(Plugin:config.pronoun_template.replace("%[name]", name), "%[pronouns]", [pnouns].join())
+        
+        //name:""
+        // return PronounTools:reverse_replace_if_ltr(PronounTools:reverse_replace_if_ltr(Plugin:config.pronoun_template, "%[name]", name), "%[pronouns]", [ltr_char, pnouns].join())
+        // return Plugin:config.pronoun_template.replace("%[name]", name).replace("%[pronouns]", [ltr_char, pnouns].join())
+    }
 
     @find_pronouns_in_desc(desc) {
         let words_in_desc = split_by_space_and_nl(desc)
@@ -48,7 +95,8 @@
 
             let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
             //Make sure there is a / and its not w/ (Cuz thats short for with)
-            let is_potential_pronoun = word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+            let is_potential_pronoun = word.len < 16 && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+
             if is_potential_pronoun {
                 let is_fraction = is_word_fraction(word)
                 let is_word_mfm = is_word_mfm(word)
@@ -66,27 +114,31 @@
         return ""
     }
 
-    @find_pronouns_in_fields(userData) {
-        let fields = userData.fields
-
+    @find_pronouns_in_fields(fields) {
         // If we can find a field that is "pronouns" prefer that
         for let i, fields.len {
-            if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("depends") {
-                return fields[i].value
+            let name = fields[i].name.lower()
+            let value = fields[i].value.lower()
+            
+            if (name.incl("pronoun") && !value.incl("depends")) {
+                // For some reason it wasnt working when added to the end of the last if statement but works here???
+                if !value.incl("http") {
+                    return value
+                }
             }
         }
         // Otherwise fallback to searching
         for let i, fields.len {
             let found_pronouns_value = PronounTools:find_pronouns_in_desc(fields[i].value)
             
-            if found_pronouns_value != "" {
+            if found_pronouns_value != "" && !found_pronouns_value.incl("http") {
                 return found_pronouns_value
             }
 
             //Cuz some people put pronouns in the name of the field....
             let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
 
-            if found_pronouns_name != "" {
+            if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
                 return found_pronouns_name
             }
         }
@@ -102,9 +154,7 @@
         return PronounTools:find_pronouns_in_desc(PronounTools:get_desc_starting_from(desc, headmate))
     }
 
-    @get_headmates_kv(post, desc) {
-        //TODO cache
-        let headmates = PluralTools:get_headmates(post)
+    @get_headmates_kv(headmates, desc) {
         let kv = {}
         for let i, headmates.len {
             Obj:set(kv, headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc))
@@ -156,8 +206,10 @@
             var key = keys[i]
             var value = kv[key]
 
-            post = post.replace(["$[scale.hm ", key, "]"].join(), ["$[scale.hm ", PronounTools:style_pronouns(key, value), "]"].join())
-            post = post.replace(["<small> - posted by ", key].join(), ["<small> - posted by ", PronounTools:style_pronouns(key, value)].join())
+            if !PronounTools:already_contains_pronouns(key) {
+                post = post.replace(["$[scale.hm ", key, "]"].join(), ["$[scale.hm ", PronounTools:style_pronouns(key, value), "]"].join())
+                post = post.replace(["<small> - posted by ", key].join(), ["<small> - posted by ", PronounTools:style_pronouns(key, value)].join())
+            }
 
         }
         return post
@@ -171,6 +223,17 @@
     }
 }
 
+
+@reverse_str(str) {
+    let str_bits = str.split('')
+
+    var final_str = ""
+    for let i, str.len {
+        final_str = [final_str, str_bits[str.len - 1 - i]].join()
+    }
+
+    return final_str
+}
 
 @contains_any(arr, str){
     for let i, arr.len {

@@ -14,3 +14,6 @@ Test:expect("is_word_fraction", is_word_fraction("She/Her")).toEqual(false)
 Test:expect("contains_any - true", contains_any(["they", "she"], "she/her")).toEqual(true)
 
 Test:expect("contains_any - false", contains_any(["him", "she"], "they/them")).toEqual(false)
+
+Test:expect("reverse_str", reverse_str("Hello World")).toEqual("dlroW olleH")
+

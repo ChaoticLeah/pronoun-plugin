@@ -115,6 +115,11 @@ Test:expect("Can grab pronouns description - Headmate - test", PronounTools:find
 meow/meow")).toEqual("meow/meow")
 
 
+Test:expect("Check if already contains pronouns - Leah", PronounTools:already_contains_pronouns("Leah :neocat_blush_hide: :v_trans: (She/Her)")).toEqual(true)
+
+Test:expect("Check if already contains pronouns - Luna", PronounTools:already_contains_pronouns("Luna (Fae/Faer)")).toEqual(true)
+
+
 var post = 
 "
 Hello World. $[scale.hm Nate] is so cool!
@@ -124,12 +129,12 @@ Hello World. $[scale.hm Nate] is so cool!
 
 var final_post = 
 "
-Hello World. $[scale.hm Nate (‭he/him)] is so cool!
+Hello World. $[scale.hm Nate (he/him)] is so cool!
 
-<small> - posted by Leah (‭She/Her)</small>
+<small> - posted by Leah (She/Her)</small>
 "
 
-var kv = PronounTools:get_headmates_kv(post, headmateDesc)
+var kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
 
 Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
 
@@ -146,10 +151,10 @@ Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronou
  final_post = 
 "Meow :neocat_floof_sad:
 
-<small> - posted by Nate (‭he/him)
+<small> - posted by Nate (he/him)
  ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
 
- kv = PronounTools:get_headmates_kv(post, headmateDesc)
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
 
 Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
 
@@ -164,7 +169,18 @@ $[scale.hm meow]
 hello hello
 $[scale.hm test]"
 
- kv = PronounTools:get_headmates_kv(post, headmateDesc)
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+
+
+
+Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).toEqual("Leah (She/Her)")
+
+Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ (reH/ehS) haeL")
+
+
+
+
 
 // PronounTools
 
