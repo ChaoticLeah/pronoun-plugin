@@ -1,0 +1,16 @@
+
+Test:expect("split_by_space_and_nl", split_by_space_and_nl("Hello
+world what a
+wonderful day")).toEqual(["Hello", "world", "what", "a", "wonderful", "day"])
+
+Test:expect("trim_parrens", trim_parrens("(She/Her)")).toEqual("She/Her")
+
+Test:expect("trim_mfm", trim_mfm("$[scale.x=10 Hello]")).toEqual("Hello")
+
+Test:expect("is_word_fraction", is_word_fraction("10/21")).toEqual(true)
+
+Test:expect("is_word_fraction", is_word_fraction("She/Her")).toEqual(false)
+
+Test:expect("contains_any - true", contains_any(["they", "she"], "she/her")).toEqual(true)
+
+Test:expect("contains_any - false", contains_any(["him", "she"], "they/them")).toEqual(false)

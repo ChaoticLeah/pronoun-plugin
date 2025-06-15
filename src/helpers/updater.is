@@ -1,0 +1,15 @@
+:: Updater {
+    @check_for_update(update_message_title, update_message, update_icon, versionPost, current_version){
+        let post = API:get_post_by_url(versionPost)    
+        if post != null {
+            let text = post.object.text
+            if Json:parsable(text) {
+                let latest_version = Json:parse(post.object.text).pronounPluginVersion
+                if latest_version > current_version && Mk:load("updateRequested") != latest_version {
+                    API:send_notification(update_message, update_message_title, update_icon)
+                    Mk:save("updateRequested", latest_version)
+                }
+            }
+        }
+    }
+}

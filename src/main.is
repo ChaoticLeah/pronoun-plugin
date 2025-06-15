@@ -1,0 +1,265 @@
+/// @ 0.12.4
+### {
+  name: "Pronouns Plugin V3.4.9 - Beta"
+  version: "3.3.9"
+  author: "@ChaosKitsune@woem.men"
+  description: "This will try to put the users pronouns in their name on any given post"
+  permissions: ["read:account", "write:notifications"]
+  config: {
+		// experimentalDescMethod: {
+		// 	type: 'boolean'
+		// 	label: 'Use experimental algorithm'
+		// 	description: 'This could put some random stuff in their name, but also will allow for more acurate pronouns'
+		// 	default: true
+		// },
+        debugExperimentalDescMethod: {
+			type: 'boolean'
+			label: 'Debug experimental algorithm'
+			description: 'Prints the data related to the setting above'
+			default: false
+		},
+        checkFields: {
+			type: 'boolean'
+			label: 'Check Fields'
+			description: 'If its crashing try disabling this'
+			default: true
+		},
+        notifyForUpdates: {
+			type: 'boolean'
+			label: 'Notify you when there is an update'
+			description: 'Turning this on will attempt to notify you once when there is an update for this plugin'
+			default: true
+		},
+
+		pronoun_template: {
+			type: "string"
+			label: "Pronoun template"
+			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
+			default: "%[name] (%[pronouns])"
+		},
+
+        cache_time: {
+            type: 'number',
+            label: 'Cache Expiration Time (seconds)',
+            description: 'Set how long pronouns should be cached before refreshing. A higher value reduces external requests.',
+            default: 86400
+        },
+
+        debug: {
+			type: 'boolean'
+			label: 'Debug'
+			description: 'If it fails to find find pronouns it will put (unknown) at the end of the name'
+			default: false
+		},
+    }
+}
+
+let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
+
+#include <metadata.is>
+
+#include <tools.is>
+
+
+@check_note(note) {
+
+    if note.reply != null {
+        note.reply = check_note(note.reply)
+    }
+
+    if note.user.name == null {
+        note.user.name = ""
+    }
+
+    if note.text == null {
+        note.text = ""
+    }
+
+
+	var is_plural_post = PluralTools:is_post_plural(note.text)
+	
+	if is_plural_post {
+        var kv = PronounTools:get_headmates_kv(note.text, note.user.description)
+        note.text = PronounTools:insert_headmate_pronouns(note.text, kv)
+	} else {
+        var description = note.user.description
+        var pronouns = null
+
+        if Plugin:config.checkFields {            
+            var userData = null
+
+            if note.user.host == null {
+                userData = Mk:api("users/show", { username: note.user.username })
+            } else {
+                userData = Mk:api("users/show", { username: note.user.username, host: note.user.host })
+            }
+
+            // let userData = Mk:api("users/show", {username: note.user.username, host: host})
+
+            if description == null {
+                description = userData.description
+            }
+
+            pronouns = PronounTools:find_pronouns_in_fields(userData)
+        }
+
+        if pronouns == null {
+            pronouns = PronounTools:find_pronouns_in_desc(description)
+        }
+
+        if Plugin:config.debug && pronouns == null {
+            pronouns = "Unknown"
+        }
+        
+        if pronouns != null {
+            note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
+        }
+
+        
+
+	}
+
+
+    // note.user.name = "meow"
+
+    // var fields = []
+    // var notePostedBy = ""
+    // var currentlyFronting = ""
+    // var description = if note.user.description != null {
+    //     note.user.description
+    // } else {
+    //     ""
+    // }
+    
+
+    // let data = {
+    //     pronouns: "",
+    //     pluralPostPronouns: null,
+    // }
+
+    // let hasHeadmate = if note.text != null {
+    //     get_has_headmate(note.text)
+    // } else {
+    //     false
+    // }
+
+    // if Plugin:config.checkFields {
+    //     let userData = Mk:api("users/show", {username: note.user.username, host: note.user.host})
+    //     fields = userData.fields
+    //     // Misskey cant grab the description from the note sometimes so if it can it grabs it here
+    //     if userData.description != null && !hasHeadmate {
+    //         note.user.description = userData.description 
+    //         description = note.user.description
+    //     }
+    // }
+
+    // note.text = replace_headmate_mfm(note.text, note.user.description)
+    
+    // if hasHeadmate {
+    //     currentlyFronting = note.user.name.slice(note.user.name.index_of("(") + 1, note.user.name.index_of(")"))
+
+    //     notePostedBy = headmate_post_name(note.text)
+    //     let current_fronter_desc = get_desc_starting_from(note.user.description, currentlyFronting)
+
+    //     description = current_fronter_desc
+
+    //     let note_posted_by_desc = get_desc_starting_from(note.user.description, notePostedBy)
+
+    //     if Plugin:config.experimentalDescMethod {
+    //         data.pluralPostPronouns = find_pronouns_in_desc(note_posted_by_desc)
+    //     } else {
+    //         data.pluralPostPronouns = check_desc(note_posted_by_desc)
+    //     }
+
+    //     if Plugin:config.debug {
+    //         if data.pluralPostPronouns == null {
+    //             data.pluralPostPronouns = "Unknown"
+    //         }
+    //     }
+    // }
+
+    // var descPronoun = get_pronouns_from_desc(description)
+
+
+    // // If nothing comes up for that headmate then just go with the general search
+    // if hasHeadmate {
+    //     if data.pluralPostPronouns == null {
+    //         description = note.user.description
+    //         descPronoun = get_pronouns_from_desc(description)
+    //     } else {
+    //         note.text = replace_last(note.text, notePostedBy, [notePostedBy, " (", data.pluralPostPronouns, ")"].join(""))
+    //     }
+    // }
+
+    // data.pronouns = descPronoun
+    // // If there are headmates then dont use the fields since right now we dont support them (unless no pronouns are found already in the desc)
+    // if fields.len > 0 && ((!hasHeadmate) || descPronoun.len == 0 || descPronoun.len > 15) {
+    //     for let i, fields.len {
+    //         if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("depends") {
+    //             if !Plugin:config.experimentalDescMethod {
+    //                 // Overwite the pronouns found in the desc, and prefer ones set in the fields
+    //                 if !fields[i].value.incl("http") {
+    //                     data.pronouns = fields[i].value
+    //                 }
+    //             } else {
+    //                 var found_pronouns = find_pronouns_in_desc(fields[i].value)
+
+    //                 if found_pronouns.len != 0 {
+    //                     data.pronouns = found_pronouns
+    //                     if data.pronouns.len == 0 {
+    //                         data.pronouns = find_pronouns_in_desc(fields[i].name)
+    //                     }
+    //                 }
+    //             }
+
+    //             break
+    //         }
+            
+    //         //If using the experimental method also apply it to the fields incase they didnt name it pronoun(s)
+    //         if Plugin:config.experimentalDescMethod && data.pronouns.len == 0 {
+    //             data.pronouns = find_pronouns_in_desc(fields[i].value)
+    //             if data.pronouns.len == 0 {
+    //                 data.pronouns = find_pronouns_in_desc(fields[i].name)
+    //             }
+    //         }
+    //     }
+    // }
+
+    // if Plugin:config.debug {
+    //     if data.pronouns.len == 0 {
+    //         data.pronouns = "Unknown"
+    //     }
+    // }
+
+    // //If there are no pronouns then just return it as-is
+    // if data.pronouns.len == 0 {
+    //     return note
+    // }
+    
+	// var name = note.user.name
+	// if name == "" {
+	// 	name = note.user.username
+	// }
+	// let ltr_char = "‭"
+
+    // note.user.name = [name, ltr_char,  " (", data.pronouns, ")"].join("")
+
+    return note
+
+}
+
+Plugin:register_note_view_interruptor(@(note) {
+    note = check_note(note)
+
+    if note.renote != null {
+        note.renote = check_note(note.renote)
+    }
+
+    return note
+})
+
+print("Pronouns In Name Successfully Installed")
+
+if Plugin:config.notifyForUpdates {
+    Updater:check_for_update("Pronoun Plugin Update", "Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin", updateIcon, versionPost, version)
+}

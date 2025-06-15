@@ -66,9 +66,16 @@ This is a misskey bug that I cannot do anything about
 
 Again this is a misskey bug
 
+## Roadmap
+
+ - Implement caching to pronouns
+ - Ability to change format that pronouns appear. Perhaps you want it to show up as [she/her] instead.
+ - Rework plural pronoun detection
+ - Unit testing
+
 ## Extra notes and thanks
 Tested in sharkey, and misskey
 
 Thanks to [miaapancake](https://woem.men/@miaapancake) for allowing me to use the screenshots in this readme
 
-If there are any bugs feel free to message me on [@ChaosKitsune@woem.men](https://woem.men/@ChaosKitsune)
+If there are any bugs feel free to message me on [@ChaosKitsune@woem.men](https://woem.men/@ChaosKitsune) or open an issue

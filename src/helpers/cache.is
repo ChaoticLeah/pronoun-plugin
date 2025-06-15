@@ -1,0 +1,24 @@
+:: Cache {
+    @save_cache(key, value) {
+        Mk:save(["cache_", key].join(), Json:stringify({
+            time: Date:now(),
+            value: value,
+        }))
+    }
+
+    @get_cache(key) {
+        let data = Mk:load(["cache_", key].join())
+
+        if data {
+            data = Json:parse(data)
+            //Cache for a day
+            if Date:now() - data.time > 1000 * Plugin:config.cache_time {
+                return data.value
+            } else {
+                return null
+            }
+        } else {
+            return null
+        }
+    }
+}

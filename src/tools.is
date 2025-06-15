@@ -1,0 +1,225 @@
+#include <helpers/cache.is>
+#include <helpers/updater.is>
+#include <helpers/api_tools.is>
+
+
+:: PluralTools {
+	@is_post_plural(post) {
+		post.incl("$[scale.hm") || post.incl("<small> - posted by ")
+	}
+
+	@get_headmates(post) {
+		let filtered_post = post.split("$[scale.hm ")
+		let headmates = []
+		if filtered_post.len > 1 {
+        	filtered_post.shift()
+			for let i, filtered_post.len {
+            	let headmate_name = filtered_post[i].split(']')[0].trim()
+				headmates.push(headmate_name)
+			}
+		}
+
+        if post.incl("<small> - posted by ") {
+            headmates.push(post.split("<small> - posted by ")[1].split("</small>")[0].split(Str:lf)[0])
+        }
+
+        return headmates
+	}
+
+
+}
+
+
+:: PronounTools {
+    @style_pronouns(name, pronouns) {
+        let ltr_char = "‭"
+        return Plugin:config.pronoun_template.replace("%[name]", name).replace("%[pronouns]", [ltr_char, pronouns].join())
+    }
+
+
+    @find_pronouns_in_desc(desc) {
+        let words_in_desc = split_by_space_and_nl(desc)
+        //desc.split(" ")
+        if Plugin:config.debugExperimentalDescMethod {
+            print(words_in_desc)
+        }
+
+        for let i, words_in_desc.len {
+
+            let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
+            //Make sure there is a / and its not w/ (Cuz thats short for with)
+            let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+            if is_potential_pronoun {
+                let is_fraction = is_word_fraction(word)
+                let is_word_mfm = is_word_mfm(word)
+                if (!is_fraction) && (!is_word_mfm) {
+                    // That might mean someone spaced it out like she / her vs she/her
+                    if (word.len == 1 && i != 0 && i != words_in_desc.len) {
+                        return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("").replace(",", "").replace("\"", "")
+                    }
+
+                    return word.trim().replace("\"", "")
+                }
+            }
+            
+        }
+        return ""
+    }
+
+    @find_pronouns_in_fields(userData) {
+        let fields = userData.fields
+
+        // If we can find a field that is "pronouns" prefer that
+        for let i, fields.len {
+            if fields[i].name.lower().incl("pronoun") && !fields[i].value.incl("depends") {
+                return fields[i].value
+            }
+        }
+        // Otherwise fallback to searching
+        for let i, fields.len {
+            let found_pronouns_value = PronounTools:find_pronouns_in_desc(fields[i].value)
+            
+            if found_pronouns_value != "" {
+                return found_pronouns_value
+            }
+
+            //Cuz some people put pronouns in the name of the field....
+            let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
+
+            if found_pronouns_name != "" {
+                return found_pronouns_name
+            }
+        }
+        return null
+    }
+
+    @get_desc_starting_from(desc, name) {
+        let descHeadmateMentionStart = desc.index_of(name) 
+        return desc.slice(descHeadmateMentionStart, desc.len)
+    }
+
+    @find_headmate_pronouns_in_desc(headmate, desc) {
+        print(PronounTools:get_desc_starting_from(desc, headmate))
+        return PronounTools:find_pronouns_in_desc(PronounTools:get_desc_starting_from(desc, headmate))
+    }
+
+    @get_headmates_kv(post, desc) {
+        //TODO cache
+        let headmates = PluralTools:get_headmates(post)
+        let kv = {}
+        for let i, headmates.len {
+            print([headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc)].join())
+            Obj:set(kv, headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc))
+        }
+        return kv
+    }
+
+    @get_pronouns_from_desc(description) {
+        if Plugin:config.experimentalDescMethod {
+            return PronounTools:find_pronouns_in_desc(description)
+        } else {
+            return PronounTools:check_desc(description)
+        }
+    }
+
+    // When something like $[scale.hm leah] is detected grab the pronouns
+    // @replace_headmate_mfm(post, desc) {
+    //     let headmates = post.split("$[scale.hm ")
+    //     if headmates.len > 1 {
+    //         headmates.shift()
+
+    //         for let i, headmates.len {
+    //             let headmate_name = headmates[i].split(']')[0].trim()
+    //             let current_fronter_desc = get_desc_starting_from(desc, headmate_name)
+    //             var descPronoun = get_pronouns_from_desc(current_fronter_desc)
+
+    //             if descPronoun.len == 0  {
+    //                 if Plugin:config.debug  {
+    //                     descPronoun = "(Unknown)"
+    //                 } else {
+    //                     descPronoun = ""
+    //                 }
+    //             } else {
+    //                 descPronoun = ["(", descPronoun, ")"].join()
+    //             }
+
+    //             post = post.replace(["$[scale.hm ", headmate_name, "]"].join(), [headmate_name, descPronoun].join())
+    //         }
+
+    //         return post
+    //     } else {
+    //         return post
+    //     }
+    // }
+
+    @insert_headmate_pronouns(post, kv) {
+        var keys = Obj:keys(kv)
+        for let i, keys.len {
+            var key = keys[i]
+            var value = kv[key]
+
+            post = post.replace(["$[scale.hm ", key, "]"].join(), ["$[scale.hm ", PronounTools:style_pronouns(key, value), "]"].join())
+            post = post.replace(["<small> - posted by ", key].join(), ["<small> - posted by ", PronounTools:style_pronouns(key, value)].join())
+
+        }
+        return post
+    }
+
+    //Checking for pronoun/ or /pronoun in a description
+    //For example she/ or /her
+    //Used in the old method for finding pronouns
+    @is_pronoun(pronoun, lowerDesc){
+        return lowerDesc.index_of([pronoun, "/"].join()) != -1 || lowerDesc.index_of(["/", pronoun].join()) != -1
+    }
+}
+
+
+@contains_any(arr, str){
+    for let i, arr.len {
+        let found_pronoun = str.incl(arr[i])
+        if found_pronoun {
+            return true
+        }
+    }
+    return false
+}
+
+
+@is_word_fraction(word){
+    return contains_any(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], word)
+}
+
+@is_word_mfm(word){
+    return contains_any(["<", ">"], word)
+}
+
+@trim_mfm(word){
+    var trimmed = word.split("]")[0].split("[")
+    return trimmed[trimmed.len - 1]
+}
+
+@trim_parrens(word){
+    var trimmed = word.split(")")[0].split("(")
+    return trimmed[trimmed.len - 1]
+}
+
+@split_by_space_and_nl(desc) {
+    var arr = desc.split(" ")
+    var new_arr = []
+    for let i, arr.len {
+        let split_by_nl = arr[i].split(Str:lf)
+        for let j, split_by_nl.len {
+            new_arr.push(split_by_nl[j])
+        }
+    }
+
+    return new_arr
+}
+
+@replace_last(str, key, replacer) {
+    let split_by_key = str.split(key)
+    split_by_key.pop()
+    let start_of_word_to_replace = split_by_key.join(key).len
+    let end_of_word_to_replace = start_of_word_to_replace + key.len
+    return [str.slice(0, start_of_word_to_replace), replacer, str.slice(end_of_word_to_replace , str.len) ].join("")
+}
