@@ -175,7 +175,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 
             let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
             //Make sure there is a / and its not w/ (Cuz thats short for with)
-            let is_potential_pronoun = word.incl("/") && (!word.incl("w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+            let is_potential_pronoun = word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
             if is_potential_pronoun {
                 let is_fraction = is_word_fraction(word)
                 let is_word_mfm = is_word_mfm(word)
@@ -226,7 +226,6 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
     }
 
     @find_headmate_pronouns_in_desc(headmate, desc) {
-        print(PronounTools:get_desc_starting_from(desc, headmate))
         return PronounTools:find_pronouns_in_desc(PronounTools:get_desc_starting_from(desc, headmate))
     }
 
@@ -235,7 +234,6 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         let headmates = PluralTools:get_headmates(post)
         let kv = {}
         for let i, headmates.len {
-            print([headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc)].join())
             Obj:set(kv, headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc))
         }
         return kv

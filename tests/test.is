@@ -111,6 +111,9 @@ Test:expect("Can grab pronouns description - Headmate - Emma", PronounTools:find
 
 Test:expect("Can grab pronouns description - Headmate - Nate", PronounTools:find_headmate_pronouns_in_desc("Nate", headmateDesc)).toEqual("he/him")
 
+Test:expect("Can grab pronouns description - Headmate - test", PronounTools:find_headmate_pronouns_in_desc("test", "test:
+meow/meow")).toEqual("meow/meow")
+
 
 var post = 
 "
