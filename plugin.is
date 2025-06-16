@@ -56,8 +56,8 @@
 		},
     }
 }
-let updateIcon = "https://woem.men/files/92af615a-4a8b-4fa0-bc61-25aa5b7f6f54"
-let version = 12
+let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.webp"
+let version = 13
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 :: Cache {
     @remove_key(key) {
