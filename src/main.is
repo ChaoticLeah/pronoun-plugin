@@ -83,13 +83,13 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
         note.user.name = ""
     }
 
-    if note.text == null {
-        note.text = ""
+    //if its a boost its not a plural post
+	var is_plural_post = if note.text == null {
+        false
+    } else {
+        PluralTools:is_post_plural(note.text)
     }
 
-
-	var is_plural_post = PluralTools:is_post_plural(note.text)
-	
 	if is_plural_post {
         let headmates = PluralTools:get_headmates(note.text)
         //get_pronouns_from_cache(headmates, note.user.username, note.user.host, note.user.description)
