@@ -1,10 +1,12 @@
-# pronoun-plugin
+# Pronoun Plugin
 A fediverse *key plugin that adds pronouns to display names
 
 ## Features
  - Shows pronouns in the username on a post
  - Works with my plural plugin and fetches the right pronouns
  - Notifications when there is an update
+ - Caching for pronouns
+ - Custom formats
 
 ## Setup
  - Copy the contents of plugin.is
@@ -16,7 +18,7 @@ A fediverse *key plugin that adds pronouns to display names
  - It will ask you to accept some permissions. Accept them.
 
 ## How does it work
-There are 2 algorithms. The basic one just scans descriptions and labels for basic pronouns like she/her and he/him, ect. The other one is more fancy and can find custom pronouns by detecting stuff with a slash inbetween them. Its smart and wont detect fractions and other things but from time to time it pulls the wrong thing. This is the new default. 
+ The algorithm can find pronouns by detecting stuff with a slash inbetween them. Its smart and wont detect fractions and other things but from time to time it pulls the wrong thing.
 
 ## What are the permissions I am accepting for?
 write:notifications is used to send you a notification when a new version of the plugin is released. You can turn this off in the plugin settings once its installed
@@ -29,7 +31,7 @@ Then edit your profile description so that it has the headmates name (exactly as
 
 Here is an example:
 
-![image](https://github.com/KevinWh0/pronoun-plugin/assets/45321184/1e664521-21eb-485d-a53c-b354c900f953)
+![image](https://github.com/ChaoticLeah/pronoun-plugin/assets/45321184/1e664521-21eb-485d-a53c-b354c900f953)
 
 
 ## What if I want to mention another headmate in one of my headmates bios?
@@ -66,9 +68,13 @@ This is a misskey bug that I cannot do anything about
 
 Again this is a misskey bug
 
+## Roadmap
+
+ - Nothing, Feel free to suggest features in the issues
+
 ## Extra notes and thanks
 Tested in sharkey, and misskey
 
 Thanks to [miaapancake](https://woem.men/@miaapancake) for allowing me to use the screenshots in this readme
 
-If there are any bugs feel free to message me on [@ChaosKitsune@woem.men](https://woem.men/@ChaosKitsune)
+If there are any bugs feel free to message me on [@ChaosKitsune@woem.men](https://woem.men/@ChaosKitsune) or open an issue

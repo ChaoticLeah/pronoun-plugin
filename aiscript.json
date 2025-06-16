@@ -1,0 +1,7 @@
+{
+  "baseUrl": "https://woem.men",
+  "endUrl": "/",
+  "pipeConsole": true,
+  "entry": "./src/main.is",
+  "export": "plugin.is"
+}

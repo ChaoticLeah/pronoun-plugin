@@ -1,0 +1,228 @@
+#include <helpers/cache.is>
+#include <helpers/updater.is>
+#include <helpers/api_tools.is>
+
+
+:: PluralTools {
+	@is_post_plural(post) {
+		post.incl("$[scale.hm") || post.incl("<small> - posted by ")
+	}
+
+	@get_headmates(post) {
+		let filtered_post = post.split("$[scale.hm ")
+		let headmates = []
+		if filtered_post.len > 1 {
+        	filtered_post.shift()
+			for let i, filtered_post.len {
+            	let headmate_name = filtered_post[i].split(']')[0].trim()
+				headmates.push(headmate_name)
+			}
+		}
+
+        if post.incl("<small> - posted by ") {
+            headmates.push(post.split("<small> - posted by ")[1].split("</small>")[0].split(Str:lf)[0])
+        }
+
+        return headmates
+	}
+
+    @get_pronouns_from_cache(headmates, username, host, description) {
+        for let i, headmates.len {
+            if !Cache:has([username, "#", headmates[i], "@", host].join()) {
+                return PronounTools:get_headmates_kv(headmates, description)
+            }
+        }
+
+        //Now we know we have all the headmates needed
+        let kv = {}
+        for let i, headmates.len {
+            Obj:set(kv, headmates[i], Cache:get_cache([username, "#", headmates[i], "@", host].join()))
+        }
+        return kv
+        
+    }
+
+}
+
+
+:: PronounTools {
+
+    // Some people include pronouns in their username.
+    @already_contains_pronouns(name) {
+        return PronounTools:find_pronouns_in_desc(name) != ""
+    }
+
+    
+    @style_pronouns(name, pronouns) {
+        var pnouns = pronouns
+        let ltr_char = "‭"
+
+        if pnouns == null || pnouns.trim() == "" {
+            if Plugin:config.debug {
+                pnouns = "Unknown"
+            } else {
+                return name
+            }
+        }
+                
+        return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
+    }
+
+    @find_pronouns_in_desc(desc) {
+        let words_in_desc = split_by_space_and_nl(desc)
+        //desc.split(" ")
+        if Plugin:config.debugExperimentalDescMethod {
+            print(words_in_desc)
+        }
+
+        for let i, words_in_desc.len {
+
+            let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
+            //Make sure there is a / and its not w/ (Cuz thats short for with)
+            let is_potential_pronoun = word.len < 16 && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+
+            if is_potential_pronoun {
+                let is_fraction = is_word_fraction(word)
+                let is_word_mfm = is_word_mfm(word)
+                if (!is_fraction) && (!is_word_mfm) {
+                    // That might mean someone spaced it out like she / her vs she/her
+                    if (word.len == 1 && i != 0 && i != words_in_desc.len) {
+                        return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("").replace(",", "").replace("\"", "")
+                    }
+
+                    return word.trim().replace("\"", "")
+                }
+            }
+            
+        }
+        return ""
+    }
+
+    @find_pronouns_in_fields(fields) {
+        // If we can find a field that is "pronouns" prefer that
+        for let i, fields.len {
+            let name = fields[i].name.lower()
+            let value = fields[i].value.lower()
+            
+            if (name.incl("pronoun") && !value.incl("depends")) {
+                // For some reason it wasnt working when added to the end of the last if statement but works here???
+                if !value.incl("http") {
+                    return value
+                }
+            }
+        }
+        // Otherwise fallback to searching
+        for let i, fields.len {
+            let found_pronouns_value = PronounTools:find_pronouns_in_desc(fields[i].value)
+            
+            if found_pronouns_value != "" && !found_pronouns_value.incl("http") {
+                return found_pronouns_value
+            }
+
+            //Cuz some people put pronouns in the name of the field....
+            let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
+
+            if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
+                return found_pronouns_name
+            }
+        }
+        return null
+    }
+
+    @get_desc_starting_from(desc, name) {
+        let descHeadmateMentionStart = desc.index_of(name) 
+        return desc.slice(descHeadmateMentionStart, desc.len)
+    }
+
+    @find_headmate_pronouns_in_desc(headmate, desc) {
+        return PronounTools:find_pronouns_in_desc(PronounTools:get_desc_starting_from(desc, headmate))
+    }
+
+    @get_headmates_kv(headmates, desc) {
+        let kv = {}
+        for let i, headmates.len {
+            Obj:set(kv, headmates[i], PronounTools:find_headmate_pronouns_in_desc(headmates[i], desc))
+        }
+        return kv
+    }
+
+    @get_pronouns_from_desc(description) {
+        if Plugin:config.experimentalDescMethod {
+            return PronounTools:find_pronouns_in_desc(description)
+        } else {
+            return PronounTools:check_desc(description)
+        }
+    }
+
+    @insert_headmate_pronouns(post, kv) {
+        var keys = Obj:keys(kv)
+        for let i, keys.len {
+            var key = keys[i]
+            var value = kv[key]
+
+            if !PronounTools:already_contains_pronouns(key) {
+                post = post.replace(["$[scale.hm ", key, "]"].join(), ["$[scale.hm ", PronounTools:style_pronouns(key, value), "]"].join())
+                post = post.replace(["<small> - posted by ", key].join(), ["<small> - posted by ", PronounTools:style_pronouns(key, value)].join())
+            }
+
+        }
+        return post
+    }
+
+    //Checking for pronoun/ or /pronoun in a description
+    //For example she/ or /her
+    //Used in the old method for finding pronouns
+    @is_pronoun(pronoun, lowerDesc){
+        return lowerDesc.index_of([pronoun, "/"].join()) != -1 || lowerDesc.index_of(["/", pronoun].join()) != -1
+    }
+}
+
+@contains_any(arr, str){
+    for let i, arr.len {
+        let found_pronoun = str.incl(arr[i])
+        if found_pronoun {
+            return true
+        }
+    }
+    return false
+}
+
+
+@is_word_fraction(word){
+    return contains_any(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], word)
+}
+
+@is_word_mfm(word){
+    return contains_any(["<", ">"], word)
+}
+
+@trim_mfm(word){
+    var trimmed = word.split("]")[0].split("[")
+    return trimmed[trimmed.len - 1]
+}
+
+@trim_parrens(word){
+    var trimmed = word.split(")")[0].split("(")
+    return trimmed[trimmed.len - 1]
+}
+
+@split_by_space_and_nl(desc) {
+    var arr = desc.split(" ")
+    var new_arr = []
+    for let i, arr.len {
+        let split_by_nl = arr[i].split(Str:lf)
+        for let j, split_by_nl.len {
+            new_arr.push(split_by_nl[j])
+        }
+    }
+
+    return new_arr
+}
+
+@replace_last(str, key, replacer) {
+    let split_by_key = str.split(key)
+    split_by_key.pop()
+    let start_of_word_to_replace = split_by_key.join(key).len
+    let end_of_word_to_replace = start_of_word_to_replace + key.len
+    return [str.slice(0, start_of_word_to_replace), replacer, str.slice(end_of_word_to_replace , str.len) ].join("")
+}

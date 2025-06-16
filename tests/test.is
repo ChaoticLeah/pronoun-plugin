@@ -1,0 +1,242 @@
+#include <../src/tools.is>
+
+#include <util_tests.is>
+
+:: Plugin {
+    let config = {
+        debugExperimentalDescMethod: false,
+        pronoun_template: "%[name] (%[pronouns])",
+        // experimentalDescMethod: true,
+        checkFields: true,
+        cache_time: 86400,
+        debugExperimentalDescMethod: false,
+        debug: false
+    }
+}
+
+
+Test:expect("Check if post contains plural - MFM", PluralTools:is_post_plural("Hello World
+$[scale.x=2,y=2 I love plural plugin]")).toEqual(false)
+
+Test:expect("Check if post contains plural - MFM", PluralTools:is_post_plural("Hello World
+Posted by $[scale.hm Leah]")).toEqual(true)
+
+Test:expect("Check if post contains plural - Legacy", PluralTools:is_post_plural("Hello
+<small> - posted by Leah</small>")).toEqual(true)
+
+
+
+Test:expect("Check if headmates are detected in post", PluralTools:get_headmates("Hello World
+Posted by $[scale.hm Leah]")).toEqual(["Leah"])
+
+Test:expect("Check if headmates are detected in post", PluralTools:get_headmates("Hello World. $[scale.hm Nate] is so cool!
+Posted by $[scale.hm Leah] and $[scale.hm Emma]")).toEqual(["Nate", "Leah", "Emma"])
+
+Test:expect("Check if headmates are detected in post - Legacy", PluralTools:get_headmates("Hello World. $[scale.hm Nate] is so cool!
+
+<small> - posted by Leah</small>")).toEqual(["Nate", "Leah"])
+
+
+Test:expect("find_pronouns_in_fields - easy", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "pronouns",
+    value: "she/her"
+}])).toEqual("she/her")
+
+Test:expect("find_pronouns_in_fields - complex", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "nouns pro(tm)",
+    value: "fae/faer"
+}])).toEqual("fae/faer")
+
+
+//The short ones are basically used for field detection
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("She/Her")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("[She/Her]")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("https://woem.men/my/notifications")).toEqual("")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("@john@mastodon.social")).toEqual("")
+
+Test:expect("Can grab pronouns description - Basic", PronounTools:find_pronouns_in_desc(
+"
+Amazing 10/10!
+https://woem.men/
+Having fun w/aiscript
+
+$[position.x=28,y=1.8 $[scale.x=0.6,y=0.6 🟢   🟡   🔴]]
+$[border.color=111111,radius=6,width=27 $[bg.color=111111 $[font.monospace $[fg.color=00ff00 <plain>root@leah:~# cat gender_and_sexuality.json
+
+{
+	pronouns: She/Her
+}
+
+root@leah:~# cat bio.txt
+
+I draw, code, and make videos. I'm fun sized! :ChikaPout:
+$[fg.color=F5A9B8 Artist], $[fg.color=5BCEFF Programmer], $[fg.color=F5A9B8 And more]
+
+Poly and ADHD creature
+
+<small>Also the reason @ashten changed backups to hourly :gura_cool:</small>
+
+
+root@leah:~# :block_terminal_cursor:
+]]
+")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Basic - No Pronouns", PronounTools:find_pronouns_in_desc(
+"
+Amazing 10/10!
+https://woem.men/
+Having fun w/aiscript
+
+meow
+")).toEqual("")
+
+
+
+
+var headmateDesc = 
+"
+Hi we are a bunch of queer folks here to bring a smile to all your faces on fedi!
+
+Meet the system!
+
+Leah
+ - Meow! She/Her
+
+Emma:
+ - Super duper gay! fae/faer
+
+Nate:
+ - Catboy, he/him
+
+
+test:
+meow/meow
+"
+
+
+Test:expect("Can grab pronouns description - Headmate - Leah", PronounTools:find_headmate_pronouns_in_desc("Leah", headmateDesc)).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Headmate - Emma", PronounTools:find_headmate_pronouns_in_desc("Emma", headmateDesc)).toEqual("fae/faer")
+
+Test:expect("Can grab pronouns description - Headmate - Nate", PronounTools:find_headmate_pronouns_in_desc("Nate", headmateDesc)).toEqual("he/him")
+
+Test:expect("Can grab pronouns description - Headmate - test", PronounTools:find_headmate_pronouns_in_desc("test", "test:
+meow/meow")).toEqual("meow/meow")
+
+
+Test:expect("Check if already contains pronouns - Leah", PronounTools:already_contains_pronouns("Leah :neocat_blush_hide: :v_trans: (She/Her)")).toEqual(true)
+
+Test:expect("Check if already contains pronouns - Luna", PronounTools:already_contains_pronouns("Luna (Fae/Faer)")).toEqual(true)
+
+
+var post = 
+"
+Hello World. $[scale.hm Nate] is so cool!
+
+<small> - posted by Leah</small>
+"
+
+var final_post = 
+"
+Hello World. $[scale.hm Nate‭ (‭he/him)] is so cool!
+
+<small> - posted by Leah‭ (‭She/Her)</small>
+"
+
+var kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
+
+Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronouns(post, kv)).toEqual(final_post)
+
+
+
+ post = 
+"Meow :neocat_floof_sad:
+
+<small> - posted by Nate
+ ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
+
+ final_post = 
+"Meow :neocat_floof_sad:
+
+<small> - posted by Nate‭ (‭he/him)
+ ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
+
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
+
+Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronouns(post, kv)).toEqual(final_post)
+
+ post = "
+Ignore this
+
+ - $[scale.hm leah]
+
+$[scale.hm meow] 
+hello hello
+$[scale.hm test]"
+
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+
+
+
+Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).toEqual("Leah‭ (‭She/Her)")
+
+Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ haeL‭ (‭She/Her)")
+
+
+
+
+
+// PronounTools
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Todo make this function also detect headmates in the old system
+
+
+// Test:expect("2 is 2", 22).toEqual(2)
+
+// Test:describe(@() {
+//     // Test:it("meow meow", @() {
+
+//     //     Test:expect(1 + 1):toEqual(2)    
+//     // })
+//     // Test:it("meow meow", @() {
+
+//     //     Test:expect(PluralTools:is_post_plural("")):toEqual(2)    
+//     // })   
+    
+// })

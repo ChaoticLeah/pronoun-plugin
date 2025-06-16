@@ -1,0 +1,77 @@
+:: Cache {
+    @remove_key(key) {
+        var cache = Mk:load("cache")
+
+        if cache == null {
+            cache = {}
+        } else {
+            cache = Json:parse(cache)
+        }
+
+        let new_obj = {}
+
+        for let i, Obj:keys(cache).len {
+            let key = Obj:keys(cache)[i]
+
+            Obj:set(new_obj, key, cache[key])
+        }
+
+        Mk:save("cache", Json:stringify(new_obj))
+    }
+
+    @has(key) {
+        var cache = Mk:load("cache")
+
+        if cache == null {
+            cache = {}
+        } else {
+            cache = Json:parse(cache)
+        }
+
+        return Obj:has(cache, key)
+    }
+
+    @clear() {
+        Mk:remove("cache")
+    }
+
+    @save_cache(key, value) {
+        var cache = Mk:load("cache")
+
+        if cache == null {
+            cache = {}
+        } else {
+            cache = Json:parse(cache)
+        }
+
+        Obj:set(cache, key, {
+            time: Date:now(),
+            value: value,
+        })
+
+        Mk:save("cache", Json:stringify(cache))
+    }
+
+    @get_cache(key) {
+        var cache = Mk:load("cache")
+
+        if cache == null {
+            cache = {}
+        } else {
+            cache = Json:parse(cache)
+        }
+
+        if Obj:has(cache, key) {
+            var data = Obj:get(cache, key)
+
+            //Cache for a day
+            if Date:now() - data.time < 1000 * Plugin:config.cache_time {
+                return data.value
+            } else {
+                return null
+            }
+        } else {
+            return null
+        }
+    }
+}

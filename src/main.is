@@ -1,0 +1,178 @@
+/// @ 0.12.4
+### {
+  name: "Pronouns Plugin V3.4.9"
+  version: "3.4.9"
+  author: "@ChaosKitsune@woem.men"
+  description: "This will try to put the users pronouns in their name on any given post"
+  permissions: ["read:account", "write:notifications"]
+  config: {
+		// experimentalDescMethod: {
+		// 	type: 'boolean'
+		// 	label: 'Use experimental algorithm'
+		// 	description: 'This could put some random stuff in their name, but also will allow for more acurate pronouns'
+		// 	default: true
+		// },
+        debugExperimentalDescMethod: {
+			type: 'boolean'
+			label: 'Debug algorithm'
+			description: 'Prints the data related to the setting above'
+			default: false
+		},
+        checkFields: {
+			type: 'boolean'
+			label: 'Check Fields'
+			description: 'If its crashing try disabling this'
+			default: true
+		},
+        notifyForUpdates: {
+			type: 'boolean'
+			label: 'Notify you when there is an update'
+			description: 'Turning this on will attempt to notify you once when there is an update for this plugin'
+			default: true
+		},
+
+		pronoun_template: {
+			type: "string"
+			label: "Pronoun template"
+			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
+			default: "%[name] (%[pronouns])"
+		},
+
+        enable_cache: {
+            type: 'boolean',
+            label: 'Enable Cache',
+            description: 'Turn caching on or off. It should be a bit faster and use less data with this on.',
+            default: true
+        },
+
+        max_cached_accounts: {
+            type: 'number',
+            label: 'Max cached accounts',
+            description: 'Setting this higher will result in potentially faster load times but will use slightly more storage',
+            default: 200
+        },
+
+        cache_time: {
+            type: 'number',
+            label: 'Cache Expiration Time (seconds)',
+            description: 'Set how long pronouns should be cached before refreshing. A higher value reduces external requests.',
+            default: 86400
+        },
+
+        debug: {
+			type: 'boolean'
+			label: 'Debug'
+			description: 'If it fails to find find pronouns it will put (unknown) at the end of the name'
+			default: false
+		},
+    }
+}
+
+let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.webp"
+
+#include <metadata.is>
+
+#include <tools.is>
+
+
+
+
+@check_note(note) {
+
+    if note.reply != null {
+        note.reply = check_note(note.reply)
+    }
+
+    if note.user.name == null {
+        note.user.name = ""
+    }
+
+    if note.text == null {
+        note.text = ""
+    }
+
+
+	var is_plural_post = PluralTools:is_post_plural(note.text)
+	
+	if is_plural_post {
+        let headmates = PluralTools:get_headmates(note.text)
+        //get_pronouns_from_cache(headmates, note.user.username, note.user.host, note.user.description)
+        var kv = PluralTools:get_pronouns_from_cache(headmates, note.user.username, note.user.host, note.user.description)
+        // var kv = PronounTools:get_headmates_kv(headmates, note.user.description)
+
+        if Plugin:config.enable_cache {
+            let keys = Obj:keys(kv)
+            for let i, keys.len {
+                Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
+            }
+        }
+
+        note.text = PronounTools:insert_headmate_pronouns(note.text, kv)
+	} else {
+        if PronounTools:already_contains_pronouns(note.user.name) {
+            return note
+        }
+        
+        var description = note.user.description
+
+        var pronouns = Cache:get_cache([note.user.username, "@", note.user.host].join())
+
+        if pronouns != null {
+            note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
+            return note
+        }
+
+        if Plugin:config.checkFields {            
+            var userData = null
+
+            if note.user.host == null {
+                userData = Mk:api("users/show", { username: note.user.username })
+            } else {
+                userData = Mk:api("users/show", { username: note.user.username, host: note.user.host })
+            }
+
+            //Just in-case. Not sure if its needed, but it doesnt hurt
+            if description == null {
+                description = userData.description
+            }
+
+            let pnouns = PronounTools:find_pronouns_in_fields(userData.fields)
+            
+            if pnouns != null {
+                pronouns = pnouns 
+            }
+        }
+
+        if pronouns == null {
+            pronouns = PronounTools:find_pronouns_in_desc(description)
+        }
+
+        note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
+
+        if Plugin:config.enable_cache {
+            Cache:save_cache([note.user.username, "@", note.user.host].join(), pronouns)
+        }
+	}
+
+    return note
+}
+
+Plugin:register_note_view_interruptor(@(note) {
+    note = check_note(note)
+
+    if note.renote != null {
+        note.renote = check_note(note.renote)
+    }
+
+    return note
+})
+
+print("Pronouns In Name Successfully Installed")
+
+if Plugin:config.notifyForUpdates {
+    Updater:check_for_update("Pronoun Plugin Update", "Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin", updateIcon, versionPost, version)
+}
+
+if !Plugin:config.enable_cache {
+    Cache:clear()
+}

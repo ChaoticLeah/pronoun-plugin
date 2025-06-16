@@ -1,0 +1,21 @@
+:: API {
+    //write:notifications
+    @send_notification(message, header, icon){
+        Mk:api("notifications/create", {
+            body: message, 
+            header: header,
+            icon: icon
+        }) 
+    }
+    //read:account
+    @get_post_by_url(posturl){
+        let post = Mk:api("ap/show", {
+            uri: posturl
+        })
+        
+        if Obj:has(post, "type") {
+            return post
+        }
+        return null
+    }
+}
