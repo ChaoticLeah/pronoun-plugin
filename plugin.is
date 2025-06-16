@@ -200,7 +200,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
     
     @style_pronouns(name, pronouns) {
         var pnouns = pronouns
-        let ltr_char = "‭"
+        let ltr_char = Str:from_codepoint(8237)
         if pnouns == null || pnouns.trim() == "" {
             if Plugin:config.debug {
                 pnouns = "Unknown"
