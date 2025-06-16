@@ -6,15 +6,15 @@
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
   config: {
-        debugExperimentalDescMethod: {
-			type: 'boolean'
-			label: 'Debug algorithm'
-			description: 'Prints the data related to the setting above'
-			default: false
+    	pronoun_template: {
+			type: "string"
+			label: "Pronoun template"
+			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
+			default: "%[name] (%[pronouns])"
 		},
         checkFields: {
 			type: 'boolean'
-			label: 'Check Fields'
+			label: 'Check User Fields (makes an extra API call)'
 			description: 'If its crashing try disabling this'
 			default: true
 		},
@@ -23,12 +23,6 @@
 			label: 'Notify you when there is an update'
 			description: 'Turning this on will attempt to notify you once when there is an update for this plugin'
 			default: true
-		},
-		pronoun_template: {
-			type: "string"
-			label: "Pronoun template"
-			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
-			default: "%[name] (%[pronouns])"
 		},
         enable_cache: {
             type: 'boolean',
@@ -48,6 +42,12 @@
             description: 'Set how long pronouns should be cached before refreshing. A higher value reduces external requests.',
             default: 86400
         },
+        debugExperimentalDescMethod: {
+			type: 'boolean'
+			label: 'Debug algorithm'
+			description: 'Prints debug info related to the algorithm'
+			default: false
+		},
         debug: {
 			type: 'boolean'
 			label: 'Debug'
@@ -211,6 +211,12 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
                 
         return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
     }
+    @check_pronoun_length(word) {
+        var slash_count = word.to_unicode_arr().filter(@(v) {
+            return v == "/"
+        }).len
+        return slash_count * 10 > word.len
+    }
     @find_pronouns_in_desc(desc) {
         let words_in_desc = split_by_space_and_nl(desc)
         //desc.split(" ")
@@ -220,7 +226,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         for let i, words_in_desc.len {
             let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
             //Make sure there is a / and its not w/ (Cuz thats short for with)
-            let is_potential_pronoun = word.len < 16 && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+            let is_potential_pronoun = check_pronoun_length(word) && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
             if is_potential_pronoun {
                 let is_fraction = is_word_fraction(word)
                 let is_word_mfm = is_word_mfm(word)
@@ -256,11 +262,11 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             if found_pronouns_value != "" && !found_pronouns_value.incl("http") {
                 return found_pronouns_value
             }
-            //Cuz some people put pronouns in the name of the field....
-            let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
-            if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
-                return found_pronouns_name
-            }
+            //Cuz some people put pronouns in the name of the field.... (turned off cuz its so uncommon and leads to false positives)
+            // let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
+            // if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
+            //     return found_pronouns_name
+            // }
         }
         return null
     }
@@ -350,7 +356,9 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         if Plugin:config.enable_cache {
             let keys = Obj:keys(kv)
             for let i, keys.len {
-                Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
+                if kv[keys[i]].len > 0 {
+                    Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
+                }
             }
         }
         note.text = PronounTools:insert_headmate_pronouns(note.text, kv)
@@ -386,7 +394,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             pronouns = PronounTools:find_pronouns_in_desc(description)
         }
         note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
-        if Plugin:config.enable_cache {
+        if Plugin:config.enable_cache && pronouns != null && pronouns.len > 0 {
             Cache:save_cache([note.user.username, "@", note.user.host].join(), pronouns)
         }
 	}

@@ -6,30 +6,25 @@
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
   config: {
-        debugExperimentalDescMethod: {
-			type: 'boolean'
-			label: 'Debug algorithm'
-			description: 'Prints the data related to the setting above'
-			default: false
+    	pronoun_template: {
+			type: "string"
+			label: "Pronoun template"
+			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
+			default: "%[name] (%[pronouns])"
 		},
+
         checkFields: {
 			type: 'boolean'
-			label: 'Check Fields'
+			label: 'Check User Fields (makes an extra API call)'
 			description: 'If its crashing try disabling this'
 			default: true
 		},
+
         notifyForUpdates: {
 			type: 'boolean'
 			label: 'Notify you when there is an update'
 			description: 'Turning this on will attempt to notify you once when there is an update for this plugin'
 			default: true
-		},
-
-		pronoun_template: {
-			type: "string"
-			label: "Pronoun template"
-			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
-			default: "%[name] (%[pronouns])"
 		},
 
         enable_cache: {
@@ -52,6 +47,13 @@
             description: 'Set how long pronouns should be cached before refreshing. A higher value reduces external requests.',
             default: 86400
         },
+
+        debugExperimentalDescMethod: {
+			type: 'boolean'
+			label: 'Debug algorithm'
+			description: 'Prints debug info related to the algorithm'
+			default: false
+		},
 
         debug: {
 			type: 'boolean'
@@ -97,7 +99,9 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
         if Plugin:config.enable_cache {
             let keys = Obj:keys(kv)
             for let i, keys.len {
-                Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
+                if kv[keys[i]].len > 0 {
+                    Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
+                }
             }
         }
 
@@ -143,7 +147,7 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
 
         note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
 
-        if Plugin:config.enable_cache {
+        if Plugin:config.enable_cache && pronouns != null && pronouns.len > 0 {
             Cache:save_cache([note.user.username, "@", note.user.host].join(), pronouns)
         }
 	}

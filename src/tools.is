@@ -68,6 +68,14 @@
         return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
     }
 
+    @check_pronoun_length(word) {
+        var slash_count = word.to_unicode_arr().filter(@(v) {
+            return v == "/"
+        }).len
+
+        return slash_count * 10 > word.len
+    }
+
     @find_pronouns_in_desc(desc) {
         let words_in_desc = split_by_space_and_nl(desc)
         //desc.split(" ")
@@ -79,7 +87,7 @@
 
             let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
             //Make sure there is a / and its not w/ (Cuz thats short for with)
-            let is_potential_pronoun = word.len < 16 && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+            let is_potential_pronoun = check_pronoun_length(word) && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
 
             if is_potential_pronoun {
                 let is_fraction = is_word_fraction(word)
@@ -119,12 +127,12 @@
                 return found_pronouns_value
             }
 
-            //Cuz some people put pronouns in the name of the field....
-            let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
+            //Cuz some people put pronouns in the name of the field.... (turned off cuz its so uncommon and leads to false positives)
+            // let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
 
-            if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
-                return found_pronouns_name
-            }
+            // if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
+            //     return found_pronouns_name
+            // }
         }
         return null
     }
