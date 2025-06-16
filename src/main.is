@@ -6,12 +6,6 @@
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]
   config: {
-		// experimentalDescMethod: {
-		// 	type: 'boolean'
-		// 	label: 'Use experimental algorithm'
-		// 	description: 'This could put some random stuff in their name, but also will allow for more acurate pronouns'
-		// 	default: true
-		// },
         debugExperimentalDescMethod: {
 			type: 'boolean'
 			label: 'Debug algorithm'

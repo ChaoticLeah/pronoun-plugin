@@ -60,19 +60,19 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
 let version = 13
 let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 :: Cache {
-    @remove_key(key) {
-        var cache = Mk:load("cache")
-        if cache == null {
-            cache = {}
-        } else {
-            cache = Json:parse(cache)
-        }
+    
+    //Delete any excess old keys
+    @shrink_to_max_keys(obj, max_keys) {
         let new_obj = {}
-        for let i, Obj:keys(cache).len {
-            let key = Obj:keys(cache)[i]
-            Obj:set(new_obj, key, cache[key])
+        let keys = Obj:keys(obj)
+        let keys_to_remove = keys.len - max_keys
+        for let i, keys.len {
+            let k = keys[i]
+            if i > keys_to_remove {
+                Obj:set(new_obj, k, obj[k])
+            }
         }
-        Mk:save("cache", Json:stringify(new_obj))
+        return new_obj
     }
     @has(key) {
         var cache = Mk:load("cache")
@@ -97,6 +97,9 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             time: Date:now(),
             value: value,
         })
+        if Obj:keys(cache).len > Plugin:config.max_cached_accounts && Obj:keys(cache).len > 0 {
+            cache = shrink_to_max_keys(cache, Plugin:config.max_cached_accounts)
+        }
         Mk:save("cache", Json:stringify(cache))
     }
     @get_cache(key) {
