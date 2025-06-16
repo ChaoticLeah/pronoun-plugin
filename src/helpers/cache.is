@@ -1,22 +1,19 @@
 :: Cache {
-    @remove_key(key) {
-        var cache = Mk:load("cache")
-
-        if cache == null {
-            cache = {}
-        } else {
-            cache = Json:parse(cache)
-        }
-
+    
+    //Delete any excess old keys
+    @shrink_to_max_keys(obj, max_keys) {
         let new_obj = {}
+        let keys = Obj:keys(obj)
+        let keys_to_remove = keys.len - max_keys
 
-        for let i, Obj:keys(cache).len {
-            let key = Obj:keys(cache)[i]
-
-            Obj:set(new_obj, key, cache[key])
+        for let i, keys.len {
+            let k = keys[i]
+            if i > keys_to_remove {
+                Obj:set(new_obj, k, obj[k])
+            }
         }
 
-        Mk:save("cache", Json:stringify(new_obj))
+        return new_obj
     }
 
     @has(key) {
@@ -48,6 +45,10 @@
             time: Date:now(),
             value: value,
         })
+
+        if Obj:keys(cache).len > Plugin:config.max_cached_accounts && Obj:keys(cache).len > 0 {
+            cache = shrink_to_max_keys(cache, Plugin:config.max_cached_accounts)
+        }
 
         Mk:save("cache", Json:stringify(cache))
     }
