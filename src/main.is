@@ -1,7 +1,7 @@
 /// @ 0.12.4
 ### {
-  name: "Pronouns Plugin V3.4.9 - Beta"
-  version: "3.3.9"
+  name: "Pronouns Plugin V3.4.9"
+  version: "3.4.9"
   author: "@ChaosKitsune@woem.men"
   description: "This will try to put the users pronouns in their name on any given post"
   permissions: ["read:account", "write:notifications"]

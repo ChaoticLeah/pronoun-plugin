@@ -36,6 +36,32 @@ Test:expect("Check if headmates are detected in post - Legacy", PluralTools:get_
 
 <small> - posted by Leah</small>")).toEqual(["Nate", "Leah"])
 
+
+Test:expect("find_pronouns_in_fields - easy", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "pronouns",
+    value: "she/her"
+}])).toEqual("she/her")
+
+Test:expect("find_pronouns_in_fields - complex", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "nouns pro(tm)",
+    value: "fae/faer"
+}])).toEqual("fae/faer")
+
+
 //The short ones are basically used for field detection
 Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("She/Her")).toEqual("She/Her")
 
@@ -129,9 +155,9 @@ Hello World. $[scale.hm Nate] is so cool!
 
 var final_post = 
 "
-Hello World. $[scale.hm Nate (he/him)] is so cool!
+Hello World. $[scale.hm Nate‭ (‭he/him)] is so cool!
 
-<small> - posted by Leah (She/Her)</small>
+<small> - posted by Leah‭ (‭She/Her)</small>
 "
 
 var kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
@@ -151,7 +177,7 @@ Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronou
  final_post = 
 "Meow :neocat_floof_sad:
 
-<small> - posted by Nate (he/him)
+<small> - posted by Nate‭ (‭he/him)
  ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
 
  kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
@@ -174,9 +200,9 @@ $[scale.hm test]"
 
 
 
-Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).toEqual("Leah (She/Her)")
+Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).toEqual("Leah‭ (‭She/Her)")
 
-Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ (reH/ehS) haeL")
+Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ haeL‭ (‭She/Her)")
 
 
 

@@ -3,5 +3,5 @@
   "endUrl": "/",
   "pipeConsole": true,
   "entry": "./src/main.is",
-  "export": "plugin_export.is"
+  "export": "plugin.is"
 }

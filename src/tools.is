@@ -52,22 +52,10 @@
         return PronounTools:find_pronouns_in_desc(name) != ""
     }
 
-    //Cuz some people like to use left to right characters in  their name
-    @reverse_replace_if_ltr(str, key, replacer) {
-        let lrt = "‮"
-        if str.index_of(lrt) == -1 {
-            return str.replace(key, replacer)
-        }
-
-        if str.index_of(key) > str.index_of(lrt) {
-            return str.replace(key, reverse_str(replacer))
-        }
-    
-    }
     
     @style_pronouns(name, pronouns) {
         var pnouns = pronouns
-        // let ltr_char = "‭"
+        let ltr_char = "‭"
 
         if pnouns == null || pnouns.trim() == "" {
             if Plugin:config.debug {
@@ -76,12 +64,8 @@
                 return name
             }
         }
-        
-        return PronounTools:reverse_replace_if_ltr(Plugin:config.pronoun_template.replace("%[name]", name), "%[pronouns]", [pnouns].join())
-        
-        //name:""
-        // return PronounTools:reverse_replace_if_ltr(PronounTools:reverse_replace_if_ltr(Plugin:config.pronoun_template, "%[name]", name), "%[pronouns]", [ltr_char, pnouns].join())
-        // return Plugin:config.pronoun_template.replace("%[name]", name).replace("%[pronouns]", [ltr_char, pnouns].join())
+                
+        return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
     }
 
     @find_pronouns_in_desc(desc) {
@@ -170,36 +154,6 @@
         }
     }
 
-    // When something like $[scale.hm leah] is detected grab the pronouns
-    // @replace_headmate_mfm(post, desc) {
-    //     let headmates = post.split("$[scale.hm ")
-    //     if headmates.len > 1 {
-    //         headmates.shift()
-
-    //         for let i, headmates.len {
-    //             let headmate_name = headmates[i].split(']')[0].trim()
-    //             let current_fronter_desc = get_desc_starting_from(desc, headmate_name)
-    //             var descPronoun = get_pronouns_from_desc(current_fronter_desc)
-
-    //             if descPronoun.len == 0  {
-    //                 if Plugin:config.debug  {
-    //                     descPronoun = "(Unknown)"
-    //                 } else {
-    //                     descPronoun = ""
-    //                 }
-    //             } else {
-    //                 descPronoun = ["(", descPronoun, ")"].join()
-    //             }
-
-    //             post = post.replace(["$[scale.hm ", headmate_name, "]"].join(), [headmate_name, descPronoun].join())
-    //         }
-
-    //         return post
-    //     } else {
-    //         return post
-    //     }
-    // }
-
     @insert_headmate_pronouns(post, kv) {
         var keys = Obj:keys(kv)
         for let i, keys.len {
@@ -221,18 +175,6 @@
     @is_pronoun(pronoun, lowerDesc){
         return lowerDesc.index_of([pronoun, "/"].join()) != -1 || lowerDesc.index_of(["/", pronoun].join()) != -1
     }
-}
-
-
-@reverse_str(str) {
-    let str_bits = str.split('')
-
-    var final_str = ""
-    for let i, str.len {
-        final_str = [final_str, str_bits[str.len - 1 - i]].join()
-    }
-
-    return final_str
 }
 
 @contains_any(arr, str){

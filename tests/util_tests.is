@@ -15,5 +15,3 @@ Test:expect("contains_any - true", contains_any(["they", "she"], "she/her")).toE
 
 Test:expect("contains_any - false", contains_any(["him", "she"], "they/them")).toEqual(false)
 
-Test:expect("reverse_str", reverse_str("Hello World")).toEqual("dlroW olleH")
-
