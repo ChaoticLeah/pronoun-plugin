@@ -1,0 +1,68 @@
+// Feel free to submit a PR with translations into other languages!
+
+let languages = {
+  en: {
+    success: "Success",
+    manual_pronouns: {
+      set_user_pronouns: "Set users pronouns",
+      set_user_headmate_pronouns: "Set headmates pronouns",
+      clear_user_headmate_cache: "Clear User and Headmate Manual Pronoun Caches",
+      
+      cleared_user_cache: "Cleared manual pronoun cache for user."
+    },
+    prompts: {
+      enter_pronouns_name: "Enter pronouns for name: %s",
+      enter_pronouns_headmate: "Enter pronouns for headmate: %s"
+    },
+    dialogs: {
+      error: "Error",
+      no_pronouns_title: "No pronouns entered",
+      no_pronouns_message: "You did not enter any pronouns.",
+      no_pronouns_headmate: "You did not enter any pronouns for headmate: %s",
+      confirm_deletion_title: "Confirm deletion",
+      confirm_deletion_message: "Are you sure you want to delete %ss saved pronouns? This will cause pronouns to be refetched next time",
+      error_no_headmates: "No headmates found in the post."
+    },
+    messages: {
+      installed: "Pronouns In Name Successfully Installed :)",
+      update_title: "Pronoun Plugin Update",
+      update_message: "Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin"
+    }
+  }
+}
+
+
+
+:: Locale {
+  let PRIMARY = LOCALE.split('-')[0]
+  let EXACT = LOCALE
+
+  // Lookup with preference order:
+  // 1) exact locale (e.g. en-US) if available
+  // 2) primary language (e.g. en) if available
+  // 3) fallback to 'en'
+  @t(key) {
+    if key == null { return key }
+
+    // choose language object
+    var lang_obj = null
+
+    if languages[Locale:EXACT] != null {
+      lang_obj = languages[Locale:EXACT]
+    } else if languages[Locale:PRIMARY] != null {
+      lang_obj = languages[Locale:PRIMARY]
+    } else {
+      lang_obj = languages["en"]
+    }
+
+    let parts = key.split(".")
+    var node = lang_obj
+    for let i, parts.len {
+      if node == null { return key }
+      node = node[parts[i]]
+    }
+
+    return if node == null { key } else { node }
+  }
+}
+

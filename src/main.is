@@ -70,6 +70,8 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
 
 #include <tools.is>
 
+#include <locale.is>
+
 
 
 
@@ -111,11 +113,10 @@ let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.we
         
         var description = note.user.description
 
-        var pronouns = Cache:get_cache([note.user.username, "@", note.user.host].join())
-
-        // Check for any manually set pronouns first
+        var pronouns = Cache:get_cache_manual([note.user.username, "@", note.user.host].join(), "manual_cache")
+        
         if pronouns == null {
-            pronouns = Cache:get_cache_manual([note.user.username, "@", note.user.host].join(), "manual_cache")
+            pronouns = Cache:get_cache([note.user.username, "@", note.user.host].join())
         }
 
         if pronouns != null {
@@ -169,11 +170,11 @@ Plugin:register_note_view_interruptor(@(note) {
 })
 
 
-Plugin:register_note_action('Manually set users pronouns', @(note) {
-    let pronouns = readline("Enter pronouns for name: ".replace("name", note.user.username))
+Plugin:register_note_action(Locale:t('manual_pronouns.set_user_pronouns'), @(note) {
+    let pronouns = readline(Locale:t('prompts.enter_pronouns_name').replace("%s", note.user.username))
     
     if pronouns.len == 0 {
-        Mk:dialog("No pronouns entered", "You did not enter any pronouns.", "error")
+        Mk:dialog(Locale:t('dialogs.no_pronouns_title'), Locale:t('dialogs.no_pronouns_message'), "error")
         return null
     }
     
@@ -181,26 +182,29 @@ Plugin:register_note_action('Manually set users pronouns', @(note) {
     Cache:save_cache_manual([note.user.username, "@", note.user.host].join(), pronouns, 99999, "manual_cache")
 })
 
-//TODO: Fix this since it doesnt work due to it reading the note text and seeing the already processed pronouns added by the first action
-
-Plugin:register_note_action('Manually set active headmates pronouns', @(note) {
+Plugin:register_note_action(Locale:t('manual_pronouns.set_user_headmate_pronouns'), @(note) {
     let headmates = PluralTools:get_headmates(PronounTools:remove_added_pronouns(note.text))
 
+    if headmates.len == 0 {
+        Mk:dialog(Locale:t('dialogs.error'), Locale:t('dialogs.error_no_headmates'), "error")
+        return null
+    }
+
     for let i, headmates.len {
-        let pronouns = readline("Enter pronouns for headmate: ".replace("headmate", headmates[i]))
-        
+        let pronouns = readline(Locale:t('prompts.enter_pronouns_headmate').replace("%s", headmates[i]))
+
         if pronouns.len == 0 {
-            Mk:dialog("No pronouns entered", "You did not enter any pronouns for headmate: ".replace("headmate", headmates[i]), "error")
-            // continue
+            Mk:dialog(Locale:t('dialogs.no_pronouns_title'), Locale:t('dialogs.no_pronouns_headmate').replace("%s", headmates[i]), "error")
+            return null
         }
-        // print([note.user.username, "#", headmates[i], "@", note.user.host].join())
+
         // Save these new pronouns to special manual cache
         Cache:save_cache_manual([note.user.username, "#", headmates[i], "@", note.user.host].join(), pronouns, 99999, "manual_cache")
     }
 
 })
 
-Plugin:register_note_action('Delete all manual pronoun caches for user/headmate', @(note) {
+Plugin:register_note_action(Locale:t('manual_pronouns.clear_user_headmate_cache'), @(note) {
     //Delete user or headmate pronouns from manual cache
     var has_headmates = false
     let headmates = PluralTools:get_headmates(PronounTools:remove_added_pronouns(note.text))
@@ -217,14 +221,12 @@ Plugin:register_note_action('Delete all manual pronoun caches for user/headmate'
         users_list = note.user.username
     }
 
-    if !Mk:confirm("Confirm deletion", "Are you sure you want to delete users saved pronouns? This will cause pronouns to be refetched next time".replace("user", users_list), "warning") {
+    if !Mk:confirm(Locale:t('dialogs.confirm_deletion_title'), Locale:t('dialogs.confirm_deletion_message').replace("%s", users_list), "warning") {
         return null
     }
 
     for let i, headmates.len {
         has_headmates = true
-        print([note.user.username, "#", headmates[i], "@", note.user.host].join())
-        print(Cache:get_cache_manual([note.user.username, "#", headmates[i], "@", note.user.host].join(), "manual_cache"))
 
         Cache:remove_manual([note.user.username, "#", headmates[i], "@", note.user.host].join(), "manual_cache")
         Cache:remove([note.user.username, "#", headmates[i], "@", note.user.host].join())
@@ -233,17 +235,13 @@ Plugin:register_note_action('Delete all manual pronoun caches for user/headmate'
     Cache:remove_manual([note.user.username, "@", note.user.host].join(), "manual_cache")
     Cache:remove([note.user.username, "@", note.user.host].join())
 
-    if has_headmates {
-        Mk:dialog("Cleared manual pronoun caches", "Cleared manual pronoun caches for user and their headmates.", "info")
-    } else {
-        Mk:dialog("Cleared manual pronoun cache", "Cleared manual pronoun cache for user.", "info")
-    }
+    Mk:dialog(Locale:t('success'), Locale:t('manual_pronouns.cleared_user_cache'), "info")
 })
 
-print("Pronouns In Name Successfully Installed")
+print(Locale:t('messages.installed'))
 
 if Plugin:config.notifyForUpdates {
-    Updater:check_for_update("Pronoun Plugin Update", "Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin", updateIcon, versionPost, version)
+    Updater:check_for_update(Locale:t('messages.update_title'), Locale:t('messages.update_message'), updateIcon, versionPost, version)
 }
 
 if !Plugin:config.enable_cache {
