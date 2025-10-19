@@ -205,14 +205,28 @@ Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).to
 Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ haeL‭ (‭She/Her)")
 
 
+var real_world_plural_desc = "<center> $[fg.color=7F7F7E m]$[fg.color=A0A0A0 e]$[fg.color=C4C4C4 o]$[fg.color=E1B9C6 o]$[fg.color=FDADC8 o]$[fg.color=FFD6E3 o]$[fg.color=FFFFFF w]$[fg.color=FFD6E3 w]$[fg.color=FDADC8 w]$[fg.color=E1B9C6 w] $[fg.color=A0A0A0 :]$[fg.color=7F7F7E 3] & $[fg.color=00ff67 beep!] We're a system of two eepy #trans :neocat_flag_polyam: #demigirl :neocat_flag_demigirl: princesses who love to sail the high seas :blobcatpirate:, lossless music :menhera_music: and :hot_wheels_trans: **System:** - Ori (she/her), Catgirl, Host - [jade](https://dash.pluralkit.me/profile/m/tpffcn) (it/it's), Robotcreature, probaly holds about 10y of trauma Also Ori is a lil manga addict so feel free to provide us with recommendations <3 Sometimes Ori DJ's but lately she kinda gave up on it cuz of missing motivation :( :neocat_flag_lesbian_kisser: :nix_lesbian: :steam_deck: :lineage: :rosahaj_hyper_comfy: Oh and we're obsessed with these (we have 7): $[x4 :emotional_support_demon:] **What other creatures think:** @fennie@oomfie.city: _Ori doesn_'_t eep_, _spinnies all night long_ @kuki@layer8.space: _Free range and bio_ @dia2Why@layer8.space: _My Linux addicted kitty cat_ @xyla@shitpost.trade: _damn_, @freya@chaosfem.tw: _your emptyheadedness is obvious_ (_and cute_) </center>"
 
+var real_world_plural_post = "Spinny, shiny discs cool...... :neobot_aww:
+
+One can just buy funny lookin plastic cases and get the most random music ever for a few bucks
+
+<small> - posted by [jade](https://dash.pluralkit.me/profile/m/tpffcn)‭ (‭she/her)</small>"
+
+//Expect it/it's
+Test:expect("Real world plural post (Jade)", PronounTools:find_headmate_pronouns_in_desc("jade", real_world_plural_desc)).toEqual("it/it's")
 
 
 // PronounTools
 
 
+let already_has_pronouns = "meow meow
 
+<small> - posted by test‭ (‭it/she)</small>"
 
+Test:expect("Remove added pronouns", PronounTools:remove_added_pronouns(already_has_pronouns)).toEqual("meow meow
+
+<small> - posted by test")
 
 
 
