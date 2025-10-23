@@ -33,23 +33,23 @@ let languages = {
     success: "Erfolg!",
     manual_pronouns: {
       set_user_pronouns: "Setze die Pronomen",
-      set_user_headmate_pronouns: "Set headmates pronouns",
-      clear_user_headmate_cache: "Clear User and Headmate Manual Pronoun Caches",
+      set_user_headmate_pronouns: "Setze die Pronomene des headmates",
+      clear_user_headmate_cache: "Lösche den Speicher für die lokale Version der Pronomen dieser Person",
       
       cleared_user_cache: "Der Speicher für manuell hinzugefügte Pronomen wurde geleert."
     },
     prompts: {
       enter_pronouns_name: "Bitte geben Sie die Pronomen für %s an.",
-      enter_pronouns_headmate: "Enter pronouns for headmate: %s"
+      enter_pronouns_headmate: "Bitte geben Sie die Pronomen für das headmate an: %s"
     },
     dialogs: {
       error: "Fehler!",
       no_pronouns_title: "Es wurden keine Pronomen angegeben.",
       no_pronouns_message: "Sie haben keine Pronomen eingegeben.",
-      no_pronouns_headmate: "You did not enter any pronouns for headmate: %s",
+      no_pronouns_headmate: "Sie haben für das headmate keine Pronomen angegeben: %s",
       confirm_deletion_title: "Bestätige die Löschung",
       confirm_deletion_message: "Sind Sie sich sicher, dass sie die gespeicherten Pronomen für %ss löschen möchten? Diese werden bei dem nächsten Mal neu geladen.",
-      error_no_headmates: "No headmates found in the post."
+      error_no_headmates: "Es wurden keine headmates in diesem Post gefunden."
     },
     messages: {
       installed: "'Pronouns In Name' wurde erfolgreich installiert. :)",
