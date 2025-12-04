@@ -110,7 +110,7 @@
             var data = Obj:get(cache, key)
 
             //Cache for a day
-            if Date:now() - data.time < 1000 * Plugin:config.cache_time {
+            if Date:now() - data.time < 1000 * Plugin:config.cache_time || storage_key == "manual_cache" {
                 return data.value
             } else {
                 return null

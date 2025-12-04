@@ -146,7 +146,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         if Obj:has(cache, key) {
             var data = Obj:get(cache, key)
             //Cache for a day
-            if Date:now() - data.time < 1000 * Plugin:config.cache_time {
+            if Date:now() - data.time < 1000 * Plugin:config.cache_time || storage_key == "manual_cache" {
                 return data.value
             } else {
                 return null
