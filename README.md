@@ -3,9 +3,10 @@ A fediverse *key plugin that adds pronouns to display names
 
 ## Features
  - Shows pronouns in the username on a post
- - Works with my plural plugin and fetches the right pronouns
+ - Works with my plural plugin & headmate hopper and fetches the right pronouns
  - Notifications when there is an update
  - Caching for pronouns
+ - Ability to override pronouns for users and their headmates
  - Custom formats
 
 ## Setup

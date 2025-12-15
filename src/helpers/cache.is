@@ -17,7 +17,11 @@
     }
 
     @has(key) {
-        var cache = Mk:load("cache")
+        return has_manual(key, "cache")
+    }
+
+    @has_manual(key, storage_key) {
+        var cache = Mk:load(storage_key)
 
         if cache == null {
             cache = {}
@@ -29,11 +33,47 @@
     }
 
     @clear() {
-        Mk:remove("cache")
+        return clear_manual("cache")
+    }
+
+    @clear_manual(storage_key) {
+        Mk:remove(storage_key)
+    }
+
+    @remove_manual(key, storage_key) {
+        var cache = Mk:load(storage_key)
+
+        if cache == null {
+            return null
+        } else {
+            cache = Json:parse(cache)
+        }
+
+        if Obj:has(cache, key) {
+            var new_cache = {}
+            let keys = Obj:keys(cache)
+
+            for let i, keys.len {
+                let k = keys[i]
+                if k != key {
+                    Obj:set(new_cache, k, cache[k])
+                }
+            }
+
+            Mk:save(storage_key, Json:stringify(new_cache))
+        }
+    }
+
+    @remove(key) {
+        return remove_manual(key, "cache")
     }
 
     @save_cache(key, value) {
-        var cache = Mk:load("cache")
+        return save_cache_manual(key, value, Plugin:config.max_cached_accounts, "cache")
+    }
+
+    @save_cache_manual(key, value, max_cached_values, storage_key) {
+        var cache = Mk:load(storage_key)
 
         if cache == null {
             cache = {}
@@ -46,15 +86,19 @@
             value: value,
         })
 
-        if Obj:keys(cache).len > Plugin:config.max_cached_accounts && Obj:keys(cache).len > 0 {
-            cache = shrink_to_max_keys(cache, Plugin:config.max_cached_accounts)
+        if Obj:keys(cache).len > max_cached_values && Obj:keys(cache).len > 0 {
+            cache = shrink_to_max_keys(cache, max_cached_values)
         }
 
-        Mk:save("cache", Json:stringify(cache))
+        Mk:save(storage_key, Json:stringify(cache))
     }
 
     @get_cache(key) {
-        var cache = Mk:load("cache")
+        return get_cache_manual(key, "cache")
+    }
+
+    @get_cache_manual(key, storage_key) {
+        var cache = Mk:load(storage_key)
 
         if cache == null {
             cache = {}
@@ -66,7 +110,7 @@
             var data = Obj:get(cache, key)
 
             //Cache for a day
-            if Date:now() - data.time < 1000 * Plugin:config.cache_time {
+            if Date:now() - data.time < 1000 * Plugin:config.cache_time || storage_key == "manual_cache" {
                 return data.value
             } else {
                 return null

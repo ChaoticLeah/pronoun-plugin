@@ -36,7 +36,13 @@
         //Now we know we have all the headmates needed
         let kv = {}
         for let i, headmates.len {
-            Obj:set(kv, headmates[i], Cache:get_cache([username, "#", headmates[i], "@", host].join()))
+            let key = [username, "#", headmates[i], "@", host].join()
+
+            if Cache:has_manual(key, "manual_cache") {
+                Obj:set(kv, headmates[i], Cache:get_cache_manual(key, "manual_cache"))
+            } else {
+                Obj:set(kv, headmates[i], Cache:get_cache(key))
+            }
         }
         return kv
         
@@ -66,6 +72,37 @@
         }
                 
         return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
+    }
+
+    // Remove any pronouns that were added by style_pronouns using the configured template.
+    // This attempts to reverse the template by replacing the %[name] and %[pronouns] parts
+    @remove_added_pronouns(name_with_pronouns) {
+        if name_with_pronouns == null {
+            return name_with_pronouns
+        }
+
+        let ltr_char = Str:from_codepoint(8237)
+        // Build the exact string that style_pronouns would produce for a given name
+        // but with a placeholder for pronouns. We'll locate the LTR marker plus the pronoun area
+        // and strip it.
+        let name_marker = Plugin:config.pronoun_template.replace("%[name]", "__NAME__").replace("%[pronouns]", "__PRON__")
+
+        // If the template doesn't include the markers as expected, fallback to a simple removal
+        if !name_marker.incl("__NAME__") || !name_marker.incl("__PRON__") {
+            // Fallback: remove any occurrence of the LTR char and anything after the last space/paren
+            if name_with_pronouns.incl(ltr_char) {
+                return name_with_pronouns.split(ltr_char)[0].trim()
+            }
+            return name_with_pronouns
+        }
+
+        // The template places an LTR char after the name and before pronouns when style_pronouns is used.
+        // So find that LTR char and strip it and everything after it.
+        if name_with_pronouns.incl(ltr_char) {
+            return name_with_pronouns.split(ltr_char)[0].trim()
+        }
+
+        return name_with_pronouns
     }
 
     @check_pronoun_length(word) {

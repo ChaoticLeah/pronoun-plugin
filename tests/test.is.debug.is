@@ -1,64 +1,3 @@
-/// @ 0.12.4
-### {
-  name: "Pronouns Plugin V5.4.9"
-  version: "5.4.9"
-  author: "@ChaosKitsune@woem.men"
-  description: "This will try to put the users pronouns in their name on any given post"
-  permissions: ["read:account", "write:notifications"]
-  config: {
-    	pronoun_template: {
-			type: "string"
-			label: "Pronoun template"
-			description: 'Template for pronoun usernames. "%[name]" is replaced with the username.  "%[pronouns]" is replaced with the pronouns. '
-			default: "%[name] (%[pronouns])"
-		},
-        checkFields: {
-			type: 'boolean'
-			label: 'Check User Fields (makes an extra API call)'
-			description: 'If its crashing try disabling this'
-			default: true
-		},
-        notifyForUpdates: {
-			type: 'boolean'
-			label: 'Notify you when there is an update'
-			description: 'Turning this on will attempt to notify you once when there is an update for this plugin'
-			default: true
-		},
-        enable_cache: {
-            type: 'boolean',
-            label: 'Enable Cache',
-            description: 'Turn caching on or off. It should be a bit faster and use less data with this on.',
-            default: true
-        },
-        max_cached_accounts: {
-            type: 'number',
-            label: 'Max cached accounts',
-            description: 'Setting this higher will result in potentially faster load times but will use slightly more storage',
-            default: 200
-        },
-        cache_time: {
-            type: 'number',
-            label: 'Cache Expiration Time (seconds)',
-            description: 'Set how long pronouns should be cached before refreshing. A higher value reduces external requests.',
-            default: 86400
-        },
-        debugExperimentalDescMethod: {
-			type: 'boolean'
-			label: 'Debug algorithm'
-			description: 'Prints debug info related to the algorithm'
-			default: false
-		},
-        debug: {
-			type: 'boolean'
-			label: 'Debug'
-			description: 'If it fails to find find pronouns it will put (unknown) at the end of the name'
-			default: false
-		},
-    }
-}
-let updateIcon = "https://woem.men/files/eecd004b-499f-4114-8dc4-8dbd1518ff89.webp"
-let version = 14
-let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 :: Cache {
     
     //Delete any excess old keys
@@ -66,85 +5,110 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         let new_obj = {}
         let keys = Obj:keys(obj)
         let keys_to_remove = keys.len - max_keys
+
         for let i, keys.len {
             let k = keys[i]
             if i > keys_to_remove {
                 Obj:set(new_obj, k, obj[k])
             }
         }
+
         return new_obj
     }
+
     @has(key) {
         return has_manual(key, "cache")
     }
+
     @has_manual(key, storage_key) {
         var cache = Mk:load(storage_key)
+
         if cache == null {
             cache = {}
         } else {
             cache = Json:parse(cache)
         }
+
         return Obj:has(cache, key)
     }
+
     @clear() {
         return clear_manual("cache")
     }
+
     @clear_manual(storage_key) {
         Mk:remove(storage_key)
     }
+
     @remove_manual(key, storage_key) {
         var cache = Mk:load(storage_key)
+
         if cache == null {
             return null
         } else {
             cache = Json:parse(cache)
         }
+
         if Obj:has(cache, key) {
             var new_cache = {}
             let keys = Obj:keys(cache)
+
             for let i, keys.len {
                 let k = keys[i]
                 if k != key {
                     Obj:set(new_cache, k, cache[k])
                 }
             }
+
             Mk:save(storage_key, Json:stringify(new_cache))
         }
     }
+
     @remove(key) {
         return remove_manual(key, "cache")
     }
+
     @save_cache(key, value) {
         return save_cache_manual(key, value, Plugin:config.max_cached_accounts, "cache")
     }
+
     @save_cache_manual(key, value, max_cached_values, storage_key) {
         var cache = Mk:load(storage_key)
+
         if cache == null {
             cache = {}
         } else {
             cache = Json:parse(cache)
         }
+
         Obj:set(cache, key, {
             time: Date:now(),
             value: value,
         })
+
         if Obj:keys(cache).len > max_cached_values && Obj:keys(cache).len > 0 {
             cache = shrink_to_max_keys(cache, max_cached_values)
         }
+
         Mk:save(storage_key, Json:stringify(cache))
     }
+
     @get_cache(key) {
         return get_cache_manual(key, "cache")
     }
+
     @get_cache_manual(key, storage_key) {
         var cache = Mk:load(storage_key)
+
         if cache == null {
             cache = {}
         } else {
             cache = Json:parse(cache)
         }
+
         if Obj:has(cache, key) {
             var data = Obj:get(cache, key)
+
             //Cache for a day
             if Date:now() - data.time < 1000 * Plugin:config.cache_time || storage_key == "manual_cache" {
                 return data.value
@@ -156,6 +120,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         }
     }
 }
+
 :: Updater {
     @check_for_update(update_message_title, update_message, update_icon, versionPost, current_version){
         let post = API:get_post_by_url(versionPost)    
@@ -171,6 +136,8 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         }
     }
 }
+
+
 :: API {
     //write:notifications
     @send_notification(message, header, icon){
@@ -192,10 +159,15 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         return null
     }
 }
+
+
+
+
 :: PluralTools {
 	@is_post_plural(post) {
 		post.incl("$[scale.hm") || post.incl("<small> - posted by ")
 	}
+
 	@get_headmates(post) {
 		let filtered_post = post.split("$[scale.hm ")
 		let headmates = []
@@ -206,21 +178,26 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
 				headmates.push(headmate_name)
 			}
 		}
+
         if post.incl("<small> - posted by ") {
             headmates.push(post.split("<small> - posted by ")[1].split("</small>")[0].split(Str:lf)[0])
         }
+
         return headmates
 	}
+
     @get_pronouns_from_cache(headmates, username, host, description) {
         for let i, headmates.len {
             if !Cache:has([username, "#", headmates[i], "@", host].join()) {
                 return PronounTools:get_headmates_kv(headmates, description)
             }
         }
+
         //Now we know we have all the headmates needed
         let kv = {}
         for let i, headmates.len {
             let key = [username, "#", headmates[i], "@", host].join()
+
             if Cache:has_manual(key, "manual_cache") {
                 Obj:set(kv, headmates[i], Cache:get_cache_manual(key, "manual_cache"))
             } else {
@@ -230,16 +207,22 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         return kv
         
     }
+
 }
+
+
 :: PronounTools {
+
     // Some people include pronouns in their username.
     @already_contains_pronouns(name) {
         return PronounTools:find_pronouns_in_desc(name) != ""
     }
+
     
     @style_pronouns(name, pronouns) {
         var pnouns = pronouns
         let ltr_char = Str:from_codepoint(8237)
+
         if pnouns == null || pnouns.trim() == "" {
             if Plugin:config.debug {
                 pnouns = "Unknown"
@@ -250,17 +233,20 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
                 
         return Plugin:config.pronoun_template.replace("%[name]", [name, ltr_char].join()).replace("%[pronouns]", [ltr_char, pnouns].join())
     }
+
     // Remove any pronouns that were added by style_pronouns using the configured template.
     // This attempts to reverse the template by replacing the %[name] and %[pronouns] parts
     @remove_added_pronouns(name_with_pronouns) {
         if name_with_pronouns == null {
             return name_with_pronouns
         }
+
         let ltr_char = Str:from_codepoint(8237)
         // Build the exact string that style_pronouns would produce for a given name
         // but with a placeholder for pronouns. We'll locate the LTR marker plus the pronoun area
         // and strip it.
         let name_marker = Plugin:config.pronoun_template.replace("%[name]", "__NAME__").replace("%[pronouns]", "__PRON__")
+
         // If the template doesn't include the markers as expected, fallback to a simple removal
         if !name_marker.incl("__NAME__") || !name_marker.incl("__PRON__") {
             // Fallback: remove any occurrence of the LTR char and anything after the last space/paren
@@ -269,29 +255,37 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             }
             return name_with_pronouns
         }
+
         // The template places an LTR char after the name and before pronouns when style_pronouns is used.
         // So find that LTR char and strip it and everything after it.
         if name_with_pronouns.incl(ltr_char) {
             return name_with_pronouns.split(ltr_char)[0].trim()
         }
+
         return name_with_pronouns
     }
+
     @check_pronoun_length(word) {
         var slash_count = word.to_unicode_arr().filter(@(v) {
             return v == "/"
         }).len
+
         return slash_count * 10 > word.len
     }
+
     @find_pronouns_in_desc(desc) {
         let words_in_desc = split_by_space_and_nl(desc)
         //desc.split(" ")
         if Plugin:config.debugExperimentalDescMethod {
             print(words_in_desc)
         }
+
         for let i, words_in_desc.len {
+
             let word = trim_parrens(trim_mfm(words_in_desc[i])).replace(",", "")
             //Make sure there is a / and its not w/ (Cuz thats short for with)
             let is_potential_pronoun = check_pronoun_length(word) && word.incl("/") && (!word.incl(" w/")) && (!word.incl("and/or")) && (!word.incl("or/and")) && (!word.incl(".")) && (!word.incl("http")) && (word.index_of("/") > 1 || word.len == 1)
+
             if is_potential_pronoun {
                 let is_fraction = is_word_fraction(word)
                 let is_word_mfm = is_word_mfm(word)
@@ -300,6 +294,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
                     if (word.len == 1 && i != 0 && i != words_in_desc.len) {
                         return [trim_mfm(words_in_desc[i - 1]), word, trim_mfm(words_in_desc[i + 1])].join("").replace(",", "").replace("\"", "")
                     }
+
                     return word.trim().replace("\"", "")
                 }
             }
@@ -307,6 +302,7 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         }
         return ""
     }
+
     @find_pronouns_in_fields(fields) {
         // If we can find a field that is "pronouns" prefer that
         for let i, fields.len {
@@ -327,21 +323,26 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             if found_pronouns_value != "" && !found_pronouns_value.incl("http") {
                 return found_pronouns_value
             }
+
             //Cuz some people put pronouns in the name of the field.... (turned off cuz its so uncommon and leads to false positives)
             // let found_pronouns_name = PronounTools:find_pronouns_in_desc(fields[i].name)
+
             // if found_pronouns_name != "" && !found_pronouns_name.incl("http") {
             //     return found_pronouns_name
             // }
         }
         return null
     }
+
     @get_desc_starting_from(desc, name) {
         let descHeadmateMentionStart = desc.index_of(name) 
         return desc.slice(descHeadmateMentionStart, desc.len)
     }
+
     @find_headmate_pronouns_in_desc(headmate, desc) {
         return PronounTools:find_pronouns_in_desc(PronounTools:get_desc_starting_from(desc, headmate))
     }
+
     @get_headmates_kv(headmates, desc) {
         let kv = {}
         for let i, headmates.len {
@@ -349,24 +350,38 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
         }
         return kv
     }
-    
+
+    @get_pronouns_from_desc(description) {
+        if Plugin:config.experimentalDescMethod {
+            return PronounTools:find_pronouns_in_desc(description)
+        } else {
+            return PronounTools:check_desc(description)
+        }
+    }
+
     @insert_headmate_pronouns(post, kv) {
         var keys = Obj:keys(kv)
         for let i, keys.len {
             var key = keys[i]
             var value = kv[key]
+
             if !PronounTools:already_contains_pronouns(key) {
                 post = post.replace(["$[scale.hm ", key, "]"].join(), ["$[scale.hm ", PronounTools:style_pronouns(key, value), "]"].join())
                 post = post.replace(["<small> - posted by ", key].join(), ["<small> - posted by ", PronounTools:style_pronouns(key, value)].join())
             }
+
         }
         return post
     }
+
     //Checking for pronoun/ or /pronoun in a description
     //For example she/ or /her
     //Used in the old method for finding pronouns
-    
+    @is_pronoun(pronoun, lowerDesc){
+        return lowerDesc.index_of([pronoun, "/"].join()) != -1 || lowerDesc.index_of(["/", pronoun].join()) != -1
+    }
 }
+
 @contains_any(arr, str){
     for let i, arr.len {
         let found_pronoun = str.incl(arr[i])
@@ -376,20 +391,26 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
     }
     return false
 }
+
+
 @is_word_fraction(word){
     return contains_any(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"], word)
 }
+
 @is_word_mfm(word){
     return contains_any(["<", ">"], word)
 }
+
 @trim_mfm(word){
     var trimmed = word.split("]")[0].split("[")
     return trimmed[trimmed.len - 1]
 }
+
 @trim_parrens(word){
     var trimmed = word.split(")")[0].split("(")
     return trimmed[trimmed.len - 1]
 }
+
 @split_by_space_and_nl(desc) {
     var arr = desc.split(" ")
     var new_arr = []
@@ -399,198 +420,288 @@ let versionPost = "https://woem.men/notes/9t8r1dy4eemc1u2l"
             new_arr.push(split_by_nl[j])
         }
     }
+
     return new_arr
 }
-// Feel free to submit a PR with translations into other languages!
-let languages = {
-  en: {
-    success: "Success",
-    manual_pronouns: {
-      set_user_pronouns: "Set users pronouns",
-      set_user_headmate_pronouns: "Set headmates pronouns",
-      clear_user_headmate_cache: "Clear User and Headmate Manual Pronoun Caches",
-      
-      cleared_user_cache: "Cleared manual pronoun cache for user."
-    },
-    prompts: {
-      enter_pronouns_name: "Enter pronouns for name: %s",
-      enter_pronouns_headmate: "Enter pronouns for headmate: %s"
-    },
-    dialogs: {
-      error: "Error",
-      no_pronouns_title: "No pronouns entered",
-      no_pronouns_message: "You did not enter any pronouns.",
-      no_pronouns_headmate: "You did not enter any pronouns for headmate: %s",
-      confirm_deletion_title: "Confirm deletion",
-      confirm_deletion_message: "Are you sure you want to delete %ss saved pronouns? This will cause pronouns to be refetched next time",
-      error_no_headmates: "No headmates found in the post."
-    },
-    messages: {
-      installed: "Pronouns In Name Successfully Installed :)",
-      update_title: "Pronoun Plugin Update",
-      update_message: "Please install the latest version of the plugin here https://github.com/ChaoticLeah/pronoun-plugin"
-    }
-  }
+
+@replace_last(str, key, replacer) {
+    let split_by_key = str.split(key)
+    split_by_key.pop()
+    let start_of_word_to_replace = split_by_key.join(key).len
+    let end_of_word_to_replace = start_of_word_to_replace + key.len
+    return [str.slice(0, start_of_word_to_replace), replacer, str.slice(end_of_word_to_replace , str.len) ].join("")
 }
-:: Locale {
-  let PRIMARY = LOCALE.split('-')[0]
-  let EXACT = LOCALE
-  // Lookup with preference order:
-  // 1) exact locale (e.g. en-US) if available
-  // 2) primary language (e.g. en) if available
-  // 3) fallback to 'en'
-  @t(key) {
-    if key == null { return key }
-    // choose language object
-    var lang_obj = null
-    if languages[Locale:EXACT] != null {
-      lang_obj = languages[Locale:EXACT]
-    } else if languages[Locale:PRIMARY] != null {
-      lang_obj = languages[Locale:PRIMARY]
-    } else {
-      lang_obj = languages["en"]
+
+
+
+Test:expect("split_by_space_and_nl", split_by_space_and_nl("Hello
+world what a
+wonderful day")).toEqual(["Hello", "world", "what", "a", "wonderful", "day"])
+
+Test:expect("trim_parrens", trim_parrens("(She/Her)")).toEqual("She/Her")
+
+Test:expect("trim_mfm", trim_mfm("$[scale.x=10 Hello]")).toEqual("Hello")
+
+Test:expect("is_word_fraction", is_word_fraction("10/21")).toEqual(true)
+
+Test:expect("is_word_fraction", is_word_fraction("She/Her")).toEqual(false)
+
+Test:expect("contains_any - true", contains_any(["they", "she"], "she/her")).toEqual(true)
+
+Test:expect("contains_any - false", contains_any(["him", "she"], "they/them")).toEqual(false)
+
+
+
+
+:: Plugin {
+    let config = {
+        debugExperimentalDescMethod: false,
+        pronoun_template: "%[name] (%[pronouns])",
+        // experimentalDescMethod: true,
+        checkFields: true,
+        cache_time: 86400,
+        debugExperimentalDescMethod: false,
+        debug: false
     }
-    let parts = key.split(".")
-    var node = lang_obj
-    for let i, parts.len {
-      if node == null { return key }
-      node = node[parts[i]]
-    }
-    return if node == null { key } else { node }
-  }
 }
-@check_note(note) {
-    if note.reply != null {
-        note.reply = check_note(note.reply)
-    }
-    if note.user.name == null {
-        note.user.name = ""
-    }
-    //if its a boost its not a plural post
-	var is_plural_post = if note.text == null {
-        false
-    } else {
-        PluralTools:is_post_plural(note.text)
-    }
-	if is_plural_post {
-        let headmates = PluralTools:get_headmates(note.text)
-        var kv = PluralTools:get_pronouns_from_cache(headmates, note.user.username, note.user.host, note.user.description)
-        if Plugin:config.enable_cache {
-            let keys = Obj:keys(kv)
-            for let i, keys.len {
-                if kv[keys[i]].len > 0 {
-                    Cache:save_cache([note.user.username, "#", keys[i], "@",note.user.host].join(), kv[keys[i]])
-                }
-            }
-        }
-        note.text = PronounTools:insert_headmate_pronouns(note.text, kv)
-	} else {
-        if PronounTools:already_contains_pronouns(note.user.name) {
-            return note
-        }
-        
-        var description = note.user.description
-        var pronouns = Cache:get_cache_manual([note.user.username, "@", note.user.host].join(), "manual_cache")
-        
-        if pronouns == null {
-            pronouns = Cache:get_cache([note.user.username, "@", note.user.host].join())
-        }
-        if pronouns != null {
-            note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
-            return note
-        }
-        if Plugin:config.checkFields {            
-            var userData = null
-            if note.user.host == null {
-                userData = Mk:api("users/show", { username: note.user.username })
-            } else {
-                userData = Mk:api("users/show", { username: note.user.username, host: note.user.host })
-            }
-            //Just in-case. Not sure if its needed, but it doesnt hurt
-            if description == null {
-                description = userData.description
-            }
-            let pnouns = PronounTools:find_pronouns_in_fields(userData.fields)
-            
-            if pnouns != null {
-                pronouns = pnouns 
-            }
-        }
-        if pronouns == null {
-            pronouns = PronounTools:find_pronouns_in_desc(description)
-        }
-        note.user.name = PronounTools:style_pronouns(note.user.name, pronouns)
-        if Plugin:config.enable_cache && pronouns != null && pronouns.len > 0 {
-            Cache:save_cache([note.user.username, "@", note.user.host].join(), pronouns)
-        }
-	}
-    return note
+
+
+Test:expect("Check if post contains plural - MFM", PluralTools:is_post_plural("Hello World
+$[scale.x=2,y=2 I love plural plugin]")).toEqual(false)
+
+Test:expect("Check if post contains plural - MFM", PluralTools:is_post_plural("Hello World
+Posted by $[scale.hm Leah]")).toEqual(true)
+
+Test:expect("Check if post contains plural - Legacy", PluralTools:is_post_plural("Hello
+<small> - posted by Leah</small>")).toEqual(true)
+
+
+
+Test:expect("Check if headmates are detected in post", PluralTools:get_headmates("Hello World
+Posted by $[scale.hm Leah]")).toEqual(["Leah"])
+
+Test:expect("Check if headmates are detected in post", PluralTools:get_headmates("Hello World. $[scale.hm Nate] is so cool!
+Posted by $[scale.hm Leah] and $[scale.hm Emma]")).toEqual(["Nate", "Leah", "Emma"])
+
+Test:expect("Check if headmates are detected in post - Legacy", PluralTools:get_headmates("Hello World. $[scale.hm Nate] is so cool!
+
+<small> - posted by Leah</small>")).toEqual(["Nate", "Leah"])
+
+
+Test:expect("find_pronouns_in_fields - easy", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "pronouns",
+    value: "she/her"
+}])).toEqual("she/her")
+
+Test:expect("find_pronouns_in_fields - complex", PronounTools:find_pronouns_in_fields([{
+    name: "Age",
+    value: "21"
+},{
+    name: "My website",
+    value: "https://woem.men/"
+},
+{
+    name: "nouns pro(tm)",
+    value: "fae/faer"
+}])).toEqual("fae/faer")
+
+
+//The short ones are basically used for field detection
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("She/Her")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("[She/Her]")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("https://woem.men/my/notifications")).toEqual("")
+
+Test:expect("Can grab pronouns description - Short", PronounTools:find_pronouns_in_desc("@john@mastodon.social")).toEqual("")
+
+Test:expect("Can grab pronouns description - Basic", PronounTools:find_pronouns_in_desc(
+"
+Amazing 10/10!
+https://woem.men/
+Having fun w/aiscript
+
+$[position.x=28,y=1.8 $[scale.x=0.6,y=0.6 🟢   🟡   🔴]]
+$[border.color=111111,radius=6,width=27 $[bg.color=111111 $[font.monospace $[fg.color=00ff00 <plain>root@leah:~# cat gender_and_sexuality.json
+
+{
+	pronouns: She/Her
 }
-Plugin:register_note_view_interruptor(@(note) {
-    note = check_note(note)
-    if note.renote != null {
-        note.renote = check_note(note.renote)
-    }
-    return note
-})
-Plugin:register_note_action(Locale:t('manual_pronouns.set_user_pronouns'), @(note) {
-    let pronouns = readline(Locale:t('prompts.enter_pronouns_name').replace("%s", note.user.username))
+
+root@leah:~# cat bio.txt
+
+I draw, code, and make videos. I'm fun sized! :ChikaPout:
+$[fg.color=F5A9B8 Artist], $[fg.color=5BCEFF Programmer], $[fg.color=F5A9B8 And more]
+
+Poly and ADHD creature
+
+<small>Also the reason @ashten changed backups to hourly :gura_cool:</small>
+
+
+root@leah:~# :block_terminal_cursor:
+]]
+")).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Basic - No Pronouns", PronounTools:find_pronouns_in_desc(
+"
+Amazing 10/10!
+https://woem.men/
+Having fun w/aiscript
+
+meow
+")).toEqual("")
+
+
+
+
+var headmateDesc = 
+"
+Hi we are a bunch of queer folks here to bring a smile to all your faces on fedi!
+
+Meet the system!
+
+Leah
+ - Meow! She/Her
+
+Emma:
+ - Super duper gay! fae/faer
+
+Nate:
+ - Catboy, he/him
+
+
+test:
+meow/meow
+"
+
+
+Test:expect("Can grab pronouns description - Headmate - Leah", PronounTools:find_headmate_pronouns_in_desc("Leah", headmateDesc)).toEqual("She/Her")
+
+Test:expect("Can grab pronouns description - Headmate - Emma", PronounTools:find_headmate_pronouns_in_desc("Emma", headmateDesc)).toEqual("fae/faer")
+
+Test:expect("Can grab pronouns description - Headmate - Nate", PronounTools:find_headmate_pronouns_in_desc("Nate", headmateDesc)).toEqual("he/him")
+
+Test:expect("Can grab pronouns description - Headmate - test", PronounTools:find_headmate_pronouns_in_desc("test", "test:
+meow/meow")).toEqual("meow/meow")
+
+
+Test:expect("Check if already contains pronouns - Leah", PronounTools:already_contains_pronouns("Leah :neocat_blush_hide: :v_trans: (She/Her)")).toEqual(true)
+
+Test:expect("Check if already contains pronouns - Luna", PronounTools:already_contains_pronouns("Luna (Fae/Faer)")).toEqual(true)
+
+
+var post = 
+"
+Hello World. $[scale.hm Nate] is so cool!
+
+<small> - posted by Leah</small>
+"
+
+var final_post = 
+"
+Hello World. $[scale.hm Nate‭ (‭he/him)] is so cool!
+
+<small> - posted by Leah‭ (‭She/Her)</small>
+"
+
+var kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
+
+Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronouns(post, kv)).toEqual(final_post)
+
+
+
+ post = 
+"Meow :neocat_floof_sad:
+
+<small> - posted by Nate
+ ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
+
+ final_post = 
+"Meow :neocat_floof_sad:
+
+<small> - posted by Nate‭ (‭he/him)
+ ?[Plural Plugin](https://woem.men/@ChaosKitsune/pages/1711151651951)</small>"
+
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+Test:expect("Get headmate pronouns from desc and store in key/value", kv).toEqual({ Nate: "he/him",Leah: "She/Her" })
+
+Test:expect("Append all headmates pronouns", PronounTools:insert_headmate_pronouns(post, kv)).toEqual(final_post)
+
+ post = "
+Ignore this
+
+ - $[scale.hm leah]
+
+$[scale.hm meow] 
+hello hello
+$[scale.hm test]"
+
+ kv = PronounTools:get_headmates_kv(PluralTools:get_headmates(post), headmateDesc)
+
+
+
+
+Test:expect("Style Pronouns", PronounTools:style_pronouns("Leah", "She/Her")).toEqual("Leah‭ (‭She/Her)")
+
+Test:expect("Style Pronouns - Reverse", PronounTools:style_pronouns("‮ haeL", "She/Her")).toEqual("‮ haeL‭ (‭She/Her)")
+
+
+var real_world_plural_desc = "<center> $[fg.color=7F7F7E m]$[fg.color=A0A0A0 e]$[fg.color=C4C4C4 o]$[fg.color=E1B9C6 o]$[fg.color=FDADC8 o]$[fg.color=FFD6E3 o]$[fg.color=FFFFFF w]$[fg.color=FFD6E3 w]$[fg.color=FDADC8 w]$[fg.color=E1B9C6 w] $[fg.color=A0A0A0 :]$[fg.color=7F7F7E 3] & $[fg.color=00ff67 beep!] We're a system of two eepy #trans :neocat_flag_polyam: #demigirl :neocat_flag_demigirl: princesses who love to sail the high seas :blobcatpirate:, lossless music :menhera_music: and :hot_wheels_trans: **System:** - Ori (she/her), Catgirl, Host - [jade](https://dash.pluralkit.me/profile/m/tpffcn) (it/it's), Robotcreature, probaly holds about 10y of trauma Also Ori is a lil manga addict so feel free to provide us with recommendations <3 Sometimes Ori DJ's but lately she kinda gave up on it cuz of missing motivation :( :neocat_flag_lesbian_kisser: :nix_lesbian: :steam_deck: :lineage: :rosahaj_hyper_comfy: Oh and we're obsessed with these (we have 7): $[x4 :emotional_support_demon:] **What other creatures think:** @fennie@oomfie.city: _Ori doesn_'_t eep_, _spinnies all night long_ @kuki@layer8.space: _Free range and bio_ @dia2Why@layer8.space: _My Linux addicted kitty cat_ @xyla@shitpost.trade: _damn_, @freya@chaosfem.tw: _your emptyheadedness is obvious_ (_and cute_) </center>"
+
+var real_world_plural_post = "Spinny, shiny discs cool...... :neobot_aww:
+
+One can just buy funny lookin plastic cases and get the most random music ever for a few bucks
+
+<small> - posted by [jade](https://dash.pluralkit.me/profile/m/tpffcn)‭ (‭she/her)</small>"
+
+//Expect it/it's
+Test:expect("Real world plural post (Jade)", PronounTools:find_headmate_pronouns_in_desc("jade", real_world_plural_desc)).toEqual("it/it's")
+
+
+// PronounTools
+
+
+let a = "meow meow
+
+<small> - posted by test‭ (‭it/she)</small>"
+
+Test:expect("Remove added pronouns", PronounTools:remove_added_pronouns(a)).toEqual("meow meow
+
+<small> - posted by test")
+
+
+
+
+
+
+
+
+
+
+
+//Todo make this function also detect headmates in the old system
+
+
+// Test:expect("2 is 2", 22).toEqual(2)
+
+// Test:describe(@() {
+//     // Test:it("meow meow", @() {
+
+//     //     Test:expect(1 + 1):toEqual(2)    
+//     // })
+//     // Test:it("meow meow", @() {
+
+//     //     Test:expect(PluralTools:is_post_plural("")):toEqual(2)    
+//     // })   
     
-    if pronouns.len == 0 {
-        Mk:dialog(Locale:t('dialogs.no_pronouns_title'), Locale:t('dialogs.no_pronouns_message'), "error")
-        return null
-    }
-    
-    // Save these new pronouns to special manual cache
-    Cache:save_cache_manual([note.user.username, "@", note.user.host].join(), pronouns, 99999, "manual_cache")
-})
-Plugin:register_note_action(Locale:t('manual_pronouns.set_user_headmate_pronouns'), @(note) {
-    let headmates = PluralTools:get_headmates(PronounTools:remove_added_pronouns(note.text))
-    if headmates.len == 0 {
-        Mk:dialog(Locale:t('dialogs.error'), Locale:t('dialogs.error_no_headmates'), "error")
-        return null
-    }
-    for let i, headmates.len {
-        let pronouns = readline(Locale:t('prompts.enter_pronouns_headmate').replace("%s", headmates[i]))
-        if pronouns.len == 0 {
-            Mk:dialog(Locale:t('dialogs.no_pronouns_title'), Locale:t('dialogs.no_pronouns_headmate').replace("%s", headmates[i]), "error")
-            return null
-        }
-        // Save these new pronouns to special manual cache
-        Cache:save_cache_manual([note.user.username, "#", headmates[i], "@", note.user.host].join(), pronouns, 99999, "manual_cache")
-    }
-})
-Plugin:register_note_action(Locale:t('manual_pronouns.clear_user_headmate_cache'), @(note) {
-    //Delete user or headmate pronouns from manual cache
-    var has_headmates = false
-    let headmates = PluralTools:get_headmates(PronounTools:remove_added_pronouns(note.text))
-    
-    //Confirm deletion using the users name or headmate names
-    var users_list = ""
-    
-    if headmates.len > 0 {
-        for let i, headmates.len {
-            users_list = [users_list, headmates[i]].join(if i == 0 { "" } else { ", " })
-        }
-    } else {
-        users_list = note.user.username
-    }
-    if !Mk:confirm(Locale:t('dialogs.confirm_deletion_title'), Locale:t('dialogs.confirm_deletion_message').replace("%s", users_list), "warning") {
-        return null
-    }
-    for let i, headmates.len {
-        has_headmates = true
-        Cache:remove_manual([note.user.username, "#", headmates[i], "@", note.user.host].join(), "manual_cache")
-        Cache:remove([note.user.username, "#", headmates[i], "@", note.user.host].join())
-    }
-    Cache:remove_manual([note.user.username, "@", note.user.host].join(), "manual_cache")
-    Cache:remove([note.user.username, "@", note.user.host].join())
-    Mk:dialog(Locale:t('success'), Locale:t('manual_pronouns.cleared_user_cache'), "info")
-})
-print(Locale:t('messages.installed'))
-if Plugin:config.notifyForUpdates {
-    Updater:check_for_update(Locale:t('messages.update_title'), Locale:t('messages.update_message'), updateIcon, versionPost, version)
-}
-if !Plugin:config.enable_cache {
-    Cache:clear()
-}
+// })
