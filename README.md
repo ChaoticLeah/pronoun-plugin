@@ -71,7 +71,6 @@ Again this is a misskey bug
 
 ## Roadmap
 
- - Manual override: Set peoples pronouns manually if it gets it wrong
  - Nothing, Feel free to suggest features in the issues
 
 ## Extra notes and thanks
