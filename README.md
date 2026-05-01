@@ -80,3 +80,6 @@ Tested in sharkey, and misskey
 Thanks to [miaapancake](https://woem.men/@miaapancake) for allowing me to use the screenshots in this readme
 
 If there are any bugs feel free to message me on [@ChaosKitsune@woem.men](https://woem.men/@ChaosKitsune) or open an issue
+
+#### AI Policy for this repo
+This repo does not use AI in any way(Programming, Assets, tooling, etc) and will not accept PR's with AI.
